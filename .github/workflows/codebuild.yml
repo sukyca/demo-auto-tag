@@ -23,3 +23,7 @@ jobs:
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
         project-name: ABcodebuild
+        env-vars-for-codebuild: |
+          token
+      env: 
+        token: ${{ secrets.GITHUB_TOKEN }}
