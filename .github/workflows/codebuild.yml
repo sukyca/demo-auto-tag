@@ -2,8 +2,9 @@ name: Run CodeBuild on pull request
 
 on:
   pull_request:
-    branches:
-      - main
+    #branches:
+      #- production
+      #- development
     types: [opened, synchronize]
 jobs:
   build:
