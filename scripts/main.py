@@ -82,8 +82,8 @@ def get_repo_schema_scripts():
         repo_schema_scripts[db] = {}
         for schema in os.listdir(os.path.join(REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
-            for file_name in _get_sorted_files(os.listdir(os.path.join(REPO_DIR, db, schema))):
-                repo_schema_scripts[db][schema].append(file_name.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
+            for item in _get_sorted_files(os.listdir(os.path.join(REPO_DIR, db, schema))):
+                repo_schema_scripts[db][schema].append(item['file_name'].replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
 def get_db_schema_scripts(repo_schema_scripts):
