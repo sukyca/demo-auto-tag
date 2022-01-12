@@ -6,13 +6,12 @@ import psycopg2
 import datetime as dt
 
 connection_details = {
-    'host': 'ahrelja-ab-demo.cnycb9wvkfqq.us-east-1.rds.amazonaws.com',
+    'host': 'ab-db-demo.cdx7ag8qtehs.us-east-1.rds.amazonaws.com',
     'port': 5432,
     'database': 'postgres',
     'user': 'postgres',
     'password': 'Iolap1go!',
 }
-conn = psycopg2.connect(**connection_details)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 REPO_DIR = os.path.join(BASE_DIR, 'ab')
@@ -26,15 +25,18 @@ clean_script_name = lambda script_name: script_name.split('__')[1] if script_nam
 clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
 
 def get_deployed_flyway_scripts(schema='public'):
+    conn = psycopg2.connect(**connection_details)
     cursor = conn.cursor()
     try:
         cursor.execute('SELECT * FROM "{}".flyway_schema_history'.format(schema))
     except psycopg2.errors.UndefinedTable:
         cursor.close()
+        conn.close()
         return []
 
     results = [res[4] for res in cursor.fetchall()]
     cursor.close()
+    conn.close()
     return results
 
 
@@ -108,6 +110,9 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
     return scripts_to_deploy
 
 def generate_flyway_filesystem(scripts_to_deploy):
+    if not os.path.exists(FLYWAY_FILESYSTEM_DIR):
+        os.mkdir(FLYWAY_FILESYSTEM_DIR)
+    
     flyway_filesystem = {}
     for db in scripts_to_deploy.keys():
         flyway_filesystem[db] = {}
@@ -159,6 +164,8 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
             )
 
 def generate_flyway_commands(scripts_to_deploy, command, environment='development'):
+    if not os.path.exists(FLYWAY_OUTPUT_DIR):
+        os.mkdir(FLYWAY_OUTPUT_DIR)
     migrate_cmds = []
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
@@ -197,6 +204,5 @@ generate_flyway_config(scripts_to_deploy, environment='development')
 generate_flyway_filesystem(scripts_to_deploy)
 generate_flyway_commands(scripts_to_deploy, command='validate', environment='development')
 generate_flyway_commands(scripts_to_deploy, command='migrate', environment='development')
-
 # TODO: Setup env variables
 # TODO: Sort files by file name
