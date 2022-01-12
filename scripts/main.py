@@ -46,7 +46,10 @@ def _get_sorted_files(files):
     for file_name in files:
         split_file_name = file_name.split("__")[1]
         if '_' in split_file_name:
-            file_order = int(split_file_name.split("_")[0])
+            try:
+                file_order = int(split_file_name.split("_")[0])
+            except ValueError:
+                file_order = 0
         else:
             file_order = 0
         unsorted_files.append({
