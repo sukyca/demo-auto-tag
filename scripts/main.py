@@ -41,7 +41,6 @@ def get_deployed_flyway_scripts(schema='public'):
     conn.close()
     return results
 
-
 def get_repo_schema_scripts():
     """Traverse all database/schema level folders in repo
     Example output:
