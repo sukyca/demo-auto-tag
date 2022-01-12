@@ -41,6 +41,20 @@ def get_deployed_flyway_scripts(schema='public'):
     conn.close()
     return results
 
+def _get_sorted_files(files):
+    unsorted_files = []
+    for file_name in files:
+        split_file_name = file_name.split("__")[1]
+        if '_' in split_file_name:
+            file_order = int(split_file_name.split("_")[0])
+        else:
+            file_order = 0
+        unsorted_files.append({
+            'file_name': file_name,
+            'file_order': file_order
+        })
+    return sorted(unsorted_files, key=lambda x: x['file_order'])
+
 def get_repo_schema_scripts():
     """Traverse all database/schema level folders in repo
     Example output:
@@ -65,7 +79,7 @@ def get_repo_schema_scripts():
         repo_schema_scripts[db] = {}
         for schema in os.listdir(os.path.join(REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
-            for file_name in sorted(os.listdir(os.path.join(REPO_DIR, db, schema))):
+            for file_name in _get_sorted_files(os.listdir(os.path.join(REPO_DIR, db, schema))):
                 repo_schema_scripts[db][schema].append(file_name.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
