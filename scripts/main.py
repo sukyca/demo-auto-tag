@@ -32,9 +32,9 @@ def get_connection_secret():
 
     return json.loads(secret_value_response['SecretString'])
 
+connection_details = get_connection_secret()
+
 def get_deployed_flyway_scripts(schema='public'):
-    connection_details = get_connection_secret()
-    print(connection_details)
     conn = psycopg2.connect(**connection_details)
     cursor = conn.cursor()
     try:
