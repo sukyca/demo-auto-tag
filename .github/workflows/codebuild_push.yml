@@ -2,8 +2,8 @@ name: Run CodeBuild on push
 
 on:
   push:
-    branches:
-      - production
+    #branches:
+      #- production
 jobs:
   build:
     name: CodeBuild
