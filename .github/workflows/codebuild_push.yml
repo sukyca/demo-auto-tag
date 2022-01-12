@@ -1,9 +1,9 @@
-name: Run CodeBuild on pull request
+name: Run CodeBuild on push
 
 on:
   push:
     branches:
-      - main
+      - production
 jobs:
   build:
     name: CodeBuild
