@@ -6,21 +6,7 @@ import boto3
 import psycopg2
 import datetime as dt
 
-# TODO: Setup env variables
 
-secret_name = "ab-demo/postgresql-rds"
-region_name = "eu-central-1"
-session = boto3.session.Session()
-client = session.client(
-    service_name='secretsmanager',
-    region_name=region_name
-)
-secret_value_response = client.get_secret_value(
-    SecretId=secret_name
-)
-
-connection_details = json.loads(secret_value_response['SecretString'])
-print(connection_details)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 REPO_DIR = os.path.join(BASE_DIR, 'ab')
 TEMP_DIR = os.path.join(BASE_DIR, 'temp')
@@ -32,7 +18,23 @@ FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 clean_script_name = lambda script_name: script_name.split('__')[1] if script_name != '<< Flyway Baseline >>' else None
 clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
 
+def get_connection_secret():
+    secret_name = "ab-demo/postgresql-rds"
+    region_name = "eu-central-1"
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+    secret_value_response = client.get_secret_value(
+        SecretId=secret_name
+    )
+
+    return json.loads(secret_value_response['SecretString'])
+
 def get_deployed_flyway_scripts(schema='public'):
+    connection_details = get_connection_secret()
+    print(connection_details)
     conn = psycopg2.connect(**connection_details)
     cursor = conn.cursor()
     try:
