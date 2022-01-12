@@ -2,19 +2,25 @@ import os
 import shutil
 import time
 import json
+import boto3
 import psycopg2
 import datetime as dt
 
 # TODO: Setup env variables
 
-connection_details = {
-    'host': 'ab-db-demo.cdx7ag8qtehs.us-east-1.rds.amazonaws.com',
-    'port': 5432,
-    'database': 'postgres',
-    'user': 'postgres',
-    'password': 'Iolap1go!',
-}
+secret_name = "ab-demo/postgresql-rds"
+region_name = "eu-central-1"
+session = boto3.session.Session()
+client = session.client(
+    service_name='secretsmanager',
+    region_name=region_name
+)
+secret_value_response = client.get_secret_value(
+    SecretId=secret_name
+)
 
+connection_details = json.loads(secret_value_response['SecretString'])
+print(connection_details)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 REPO_DIR = os.path.join(BASE_DIR, 'ab')
 TEMP_DIR = os.path.join(BASE_DIR, 'temp')
