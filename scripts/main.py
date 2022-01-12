@@ -5,6 +5,8 @@ import json
 import psycopg2
 import datetime as dt
 
+# TODO: Setup env variables
+
 connection_details = {
     'host': 'ab-db-demo.cdx7ag8qtehs.us-east-1.rds.amazonaws.com',
     'port': 5432,
@@ -64,7 +66,7 @@ def get_repo_schema_scripts():
         repo_schema_scripts[db] = {}
         for schema in os.listdir(os.path.join(REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
-            for file_name in os.listdir(os.path.join(REPO_DIR, db, schema)):
+            for file_name in sorted(os.listdir(os.path.join(REPO_DIR, db, schema))):
                 repo_schema_scripts[db][schema].append(file_name.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
@@ -75,7 +77,6 @@ def get_db_schema_scripts(repo_schema_scripts):
         for schema_name in repo_schema_scripts[db].keys():
             db_schema_scripts[db][schema_name] = []
             for script_name in get_deployed_flyway_scripts(schema=schema_name):
-                #db_schema_scripts[db][schema_name].append(res['script'].replace('.sql', '')) # res['script'] = V2022.01.01.10.30.00.100__TABLE_NAME.sql
                 db_schema_scripts[db][schema_name].append(script_name.replace('.sql', '')) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
@@ -110,6 +111,9 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
     return scripts_to_deploy
 
 def generate_flyway_filesystem(scripts_to_deploy):
+    if not os.path.exists(TEMP_DIR):
+        os.mkdir(TEMP_DIR)
+    
     if not os.path.exists(FLYWAY_FILESYSTEM_DIR):
         os.mkdir(FLYWAY_FILESYSTEM_DIR)
     
@@ -190,19 +194,25 @@ def destroy_flyway_filesystem(repo_schema_scripts):
         if os.path.exists(os.path.join(FLYWAY_FILESYSTEM_DIR, db)):
             shutil.rmtree(os.path.join(FLYWAY_FILESYSTEM_DIR, db))
 
+def main():
+    repo_schema_scripts = get_repo_schema_scripts()
+    db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
+    scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
 
-repo_schema_scripts = get_repo_schema_scripts()
-db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
-scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    print("Repo schema scripts", json.dumps(repo_schema_scripts, indent=2))
+    print("DB schema scripts", json.dumps(db_schema_scripts, indent=2))
+    print("Scripts to deploy", json.dumps(scripts_to_deploy, indent=2))
 
-print("Repo schema scripts", json.dumps(repo_schema_scripts, indent=2))
-print("DB schema scripts", json.dumps(db_schema_scripts, indent=2))
-print("Scripts to deploy", json.dumps(scripts_to_deploy, indent=2))
+    destroy_flyway_filesystem(scripts_to_deploy)
+    print("Generating Flyway filesystem")
+    generate_flyway_filesystem(scripts_to_deploy)
+    
+    print("Generating Flyway config")
+    generate_flyway_config(scripts_to_deploy, environment='development')
+    
+    print("Generating Flyway migrate/validate commands")
+    generate_flyway_commands(scripts_to_deploy, command='validate', environment='development')
+    generate_flyway_commands(scripts_to_deploy, command='migrate', environment='development')
 
-destroy_flyway_filesystem(scripts_to_deploy)
-generate_flyway_config(scripts_to_deploy, environment='development')
-generate_flyway_filesystem(scripts_to_deploy)
-generate_flyway_commands(scripts_to_deploy, command='validate', environment='development')
-generate_flyway_commands(scripts_to_deploy, command='migrate', environment='development')
-# TODO: Setup env variables
-# TODO: Sort files by file name
+if __name__ == '__main__':
+    main()
