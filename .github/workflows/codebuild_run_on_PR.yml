@@ -32,5 +32,5 @@ jobs:
           ENVIRONMENT,
           SCRIPT_NAME
       env:
-       ENVIRONMENT: ${GITHUB_BASE_REF}
+       ENVIRONMENT: ${{ github.base_ref }}
        SCRIPT_NAME: "validate.sh"
