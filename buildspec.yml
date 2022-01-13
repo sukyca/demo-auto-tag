@@ -22,7 +22,7 @@ phases:
     commands:
       - echo $GITHUB_EVENT_NAME
       - |
-        if [ "$GITHUB_EVENT_NAME" = "push" ]
+        if [ "$GITHUB_EVENT_NAME" == "push" ]
         then
           export ENVIRONMENT="$GITHUB_REF_NAME"
           ls
