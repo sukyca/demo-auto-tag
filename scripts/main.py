@@ -15,18 +15,30 @@ FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
 clean_script_name = lambda script_name: script_name.split('__')[1] if script_name != '<< Flyway Baseline >>' else None
-clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
+clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) if script_name.startswith('V') else script_name for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
 
-connection_details = {
-    'host': os.getenv('DEVDB_HOST'),
-    'port': os.getenv('DEVDB_PORT'),
-    'database': os.getenv('DEVDB_DATABASE'),
-    'user': os.getenv('DEVDB_USER'),
-    'password': os.getenv('DEVDB_PASSWORD')
+dev_conn_details = {
+    'host': os.getenv('DEV_HOST'),
+    'port': os.getenv('DEV_PORT'),
+    'database': os.getenv('DEV_DATABASE'),
+    'user': os.getenv('DEV_USER'),
+    'password': os.getenv('DEV_PASSWORD'),
 }
 
-def get_deployed_flyway_scripts(schema='public'):
-    conn = psycopg2.connect(**connection_details)
+prod_conn_details = {
+    'host': os.getenv('PROD_HOST'),
+    'port': os.getenv('PROD_PORT'),
+    'database': os.getenv('PROD_DATABASE'),
+    'user': os.getenv('PROD_USER'),
+    'password': os.getenv('PROD_PASSWORD'),
+}
+
+def get_deployed_flyway_scripts(schema, environment):
+    creds = {
+        'development': dev_conn_details,
+        'production': prod_conn_details,
+    }
+    conn = psycopg2.connect(**creds[environment])
     cursor = conn.cursor()
     try:
         cursor.execute('SELECT * FROM "{}".flyway_schema_history'.format(schema))
@@ -40,22 +52,30 @@ def get_deployed_flyway_scripts(schema='public'):
     conn.close()
     return results
 
-def _get_sorted_files(files):
-    unsorted_files = []
-    for file_name in files:
-        split_file_name = file_name.split("__")[1]
-        if '_' in split_file_name:
-            try:
-                file_order = int(split_file_name.split("_")[0])
-            except ValueError:
-                file_order = 0
-        else:
-            file_order = 0
-        unsorted_files.append({
-            'file_name': file_name,
-            'file_order': file_order
-        })
-    return sorted(unsorted_files, key=lambda x: x['file_order'])
+def sorted_scripts_to_deploy(scripts_to_deploy):
+    for db in scripts_to_deploy.keys():
+        for schema_name in scripts_to_deploy[db].keys():
+            versioned_files = []
+            non_versioned_files = []
+            for file_name in scripts_to_deploy[db][schema_name]:
+                clean_file_name = clean_script_name(file_name)
+                if clean_file_name[0].isnumeric():
+                    file_order = int(clean_file_name.split("_")[0])
+                else:
+                    file_order = 0
+                
+                content = {
+                    'file_name': file_name,
+                    'file_order': file_order
+                }
+                if file_name.startswith('V'):
+                    versioned_files.append(content)
+                else:
+                    non_versioned_files.append(content)
+            sorted_v = sorted(versioned_files, key=lambda x: x['file_order'], reverse=False)
+            sorted_nonv = sorted(non_versioned_files, key=lambda x: x['file_order'], reverse=False)
+            scripts_to_deploy[db][schema_name] = [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_nonv]
+    return scripts_to_deploy
 
 def get_repo_schema_scripts():
     """Traverse all database/schema level folders in repo
@@ -81,17 +101,17 @@ def get_repo_schema_scripts():
         repo_schema_scripts[db] = {}
         for schema in os.listdir(os.path.join(REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
-            for item in _get_sorted_files(os.listdir(os.path.join(REPO_DIR, db, schema))):
-                repo_schema_scripts[db][schema].append(item['file_name'].replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
+            for item in os.listdir(os.path.join(REPO_DIR, db, schema)):
+                repo_schema_scripts[db][schema].append(item.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
-def get_db_schema_scripts(repo_schema_scripts):
+def get_db_schema_scripts(repo_schema_scripts, environment='development'):
     db_schema_scripts = {}
     for db in repo_schema_scripts.keys():
         db_schema_scripts[db] = {}
         for schema_name in repo_schema_scripts[db].keys():
             db_schema_scripts[db][schema_name] = []
-            for script_name in get_deployed_flyway_scripts(schema=schema_name):
+            for script_name in get_deployed_flyway_scripts(schema=schema_name, environment=environment):
                 db_schema_scripts[db][schema_name].append(script_name.replace('.sql', '')) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
@@ -106,7 +126,10 @@ def _rename_deployed_scripts(deployed, db, schema_name, db_schema_scripts):
 def _rename_to_deploy_scripts(to_deploy):
     to_deploy_scripts = []
     for file_name in to_deploy:
-        to_deploy_scripts.append('V{}__' + file_name)
+        if '__' in file_name:
+            to_deploy_scripts.append(file_name)
+        else:
+            to_deploy_scripts.append('V{}__' + file_name)
     return to_deploy_scripts
 
 def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
@@ -140,10 +163,16 @@ def generate_flyway_filesystem(scripts_to_deploy):
             for file_name in scripts_to_deploy[db][schema_name]:
                 time.sleep(0.001)
                 version = dt.datetime.utcnow().strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
-                content = {
-                    'original_file': 'V{}__' + clean_script_name(file_name) + '.sql',
-                    'new_file': file_name.format(version) + '.sql'
-                }
+                if not file_name.startswith('V'):
+                    content = {
+                        'original_file': file_name + '.sql',
+                        'new_file': file_name + '.sql'
+                    }
+                else:
+                    content = {
+                        'original_file': 'V{}__' + clean_script_name(file_name) + '.sql',
+                        'new_file': file_name.format(version) + '.sql'
+                    }
                 flyway_filesystem[db][schema_name].append(content)
     
     for db in flyway_filesystem.keys():
@@ -164,17 +193,27 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     if not os.path.exists(CONFIG_DIR):
         os.mkdir(CONFIG_DIR)
     
-    configuration = [
-        'flyway.url=jdbc:postgresql://${DEVDB_HOST}:${DEVDB_PORT}/${DEVDB_DATABASE}',
-        'flyway.user=${DEVDB_USER}',
-        'flyway.password=${DEVDB_PASSWORD}',
-        
+    creds = {
+        'development': [
+            'flyway.url=jdbc:postgresql://${DEV_HOST}:${DEV_PORT}/${DEV_DATABASE}',
+            'flyway.user=${DEV_USER}',
+            'flyway.password=${DEV_PASSWORD}'
+        ],
+        'production': [
+            'flyway.url=jdbc:postgresql://${PROD_HOST}:${PROD_PORT}/${PROD_DATABASE}',
+            'flyway.user=${PROD_USER}',
+            'flyway.password=${PROD_PASSWORD}'
+        ]
+    }
+    
+    configuration = creds[environment] + [
         'flyway.baselineOnMigrate=true',
         'flyway.ignoreMissingMigrations=true',
         'flyway.cleanDisabled=true',
         'flyway.createSchemas=false',
         'flyway.validateMigrationNaming=true'
     ]
+    
     for db in repo_schema_scripts.keys():
         for schema_name in repo_schema_scripts[db].keys():
             _write_to_file(
@@ -182,9 +221,10 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
                 configuration + ['flyway.schemas={}'.format(schema_name)]
             )
 
-def generate_flyway_commands(scripts_to_deploy, command, environment='development'):
+def generate_flyway_commands(scripts_to_deploy, environment, command):
     if not os.path.exists(FLYWAY_OUTPUT_DIR):
         os.mkdir(FLYWAY_OUTPUT_DIR)
+    
     migrate_cmds = []
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
@@ -209,10 +249,11 @@ def destroy_flyway_filesystem(repo_schema_scripts):
         if os.path.exists(os.path.join(FLYWAY_FILESYSTEM_DIR, db)):
             shutil.rmtree(os.path.join(FLYWAY_FILESYSTEM_DIR, db))
 
-def main():
+def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
-    db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
+    db_schema_scripts = get_db_schema_scripts(repo_schema_scripts, environment)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    scripts_to_deploy = sorted_scripts_to_deploy(scripts_to_deploy)
 
     print("Repo schema scripts", json.dumps(repo_schema_scripts, indent=2))
     print("DB schema scripts", json.dumps(db_schema_scripts, indent=2))
@@ -223,16 +264,13 @@ def main():
     generate_flyway_filesystem(scripts_to_deploy)
     
     print("Generating Flyway config")
-    generate_flyway_config(scripts_to_deploy, environment='development')
+    generate_flyway_config(scripts_to_deploy, environment)
     
     print("Generating Flyway migrate/validate commands")
-    generate_flyway_commands(scripts_to_deploy, command='validate', environment='development')
-    generate_flyway_commands(scripts_to_deploy, command='migrate', environment='development')
+    generate_flyway_commands(scripts_to_deploy, environment, command='validate')
+    generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
 
 
 if __name__ == '__main__':
-    print(json.dumps({
-        key: dict(os.environ)[key]
-        for key in sorted(dict(os.environ).keys())
-    }, indent=2))
-    main()
+    environment = os.getenv('environment', 'development')
+    main(environment)

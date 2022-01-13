@@ -1,2 +1,8 @@
 scripts/debug.py
 temp/
+.env
+
+development_push.json
+development_pr.json
+production_push.json
+production_pr.json
