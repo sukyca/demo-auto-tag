@@ -33,6 +33,7 @@ phases:
           echo GITHUB_EVENT_NAME value is push
         else
           echo GITHUB_EVENT_NAME value is not push
+        fi
      # - |
       #  if[$GITHUB_EVENT_NAME == "push"]
        # then
