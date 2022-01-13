@@ -1,11 +1,11 @@
 import os
-import sys
 import shutil
 import time
 import json
 import psycopg2
 import datetime as dt
 
+import utils
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 REPO_DIR = os.path.join(BASE_DIR, 'ab')
@@ -15,8 +15,6 @@ CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
 FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
-clean_script_name = lambda script_name: script_name.split('__')[1] if script_name != '<< Flyway Baseline >>' else None
-clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) if script_name.startswith('V') else script_name for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
 
 dev_conn_details = {
     'host': os.getenv('DEV_HOST'),
@@ -59,7 +57,7 @@ def sorted_scripts_to_deploy(scripts_to_deploy):
             versioned_files = []
             non_versioned_files = []
             for file_name in scripts_to_deploy[db][schema_name]:
-                clean_file_name = clean_script_name(file_name)
+                clean_file_name = utils.clean_script_name(file_name)
                 if clean_file_name[0].isnumeric():
                     file_order = int(clean_file_name.split("_")[0])
                 else:
@@ -134,15 +132,15 @@ def _rename_to_deploy_scripts(to_deploy):
     return to_deploy_scripts
 
 def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
-    clean_repo_scripts = clean_schema_scripts(repo_schema_scripts)
-    clean_db_scripts = clean_schema_scripts(db_schema_scripts)
+    clean_repo_scripts = utils.clean_schema_scripts(repo_schema_scripts)
+    clean_db_scripts = utils.clean_schema_scripts(db_schema_scripts)
     
     scripts_to_deploy = {}
     for db in clean_repo_scripts.keys():
         scripts_to_deploy[db] = {}
         for schema_name in clean_repo_scripts[db].keys():
-            db_scripts   = set(clean_db_scripts[db][schema_name])
-            repo_scripts = set(clean_repo_scripts[db][schema_name])
+            db_scripts   = clean_db_scripts[db][schema_name]
+            repo_scripts = clean_repo_scripts[db][schema_name]
             
             deployed = _rename_deployed_scripts(repo_scripts.intersection(db_scripts), db, schema_name, db_schema_scripts)
             to_deploy = _rename_to_deploy_scripts(repo_scripts.difference(db_scripts))
@@ -217,7 +215,7 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     
     for db in repo_schema_scripts.keys():
         for schema_name in repo_schema_scripts[db].keys():
-            _write_to_file(
+            utils.write_to_file(
                 os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name.lower())), 
                 configuration + ['flyway.schemas={}'.format(schema_name)]
             )
@@ -237,18 +235,8 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
             )
             migrate_cmds.append(cmd)
     
-    _write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
-    
-def _write_to_file(path, content):
-    if isinstance(content, list):
-        content = '\n'.join(content)
-    with open(path, 'w') as f:
-        f.write(content)
+    utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
 
-def destroy_flyway_filesystem(repo_schema_scripts):
-    for db in repo_schema_scripts.keys():
-        if os.path.exists(os.path.join(FLYWAY_FILESYSTEM_DIR, db)):
-            shutil.rmtree(os.path.join(FLYWAY_FILESYSTEM_DIR, db))
 
 def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
@@ -260,7 +248,7 @@ def main(environment):
     print("DB schema scripts", json.dumps(db_schema_scripts, indent=2))
     print("Scripts to deploy", json.dumps(scripts_to_deploy, indent=2))
 
-    destroy_flyway_filesystem(scripts_to_deploy)
+    utils.destroy_flyway_filesystem(scripts_to_deploy, FLYWAY_FILESYSTEM_DIR)
     print("Generating Flyway filesystem")
     generate_flyway_filesystem(scripts_to_deploy)
     
