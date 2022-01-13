@@ -28,11 +28,8 @@ phases:
       #- cd temp
       - echo $GITHUB_EVENT_NAME
       - |
-        if[$GITHUB_EVENT_NAME == "push"];
-        then
+        if[ $GITHUB_EVENT_NAME = "push" ]; then
           echo GITHUB_EVENT_NAME value is push
-        else
-          echo GITHUB_EVENT_NAME value is not push
         fi
      # - |
       #  if[$GITHUB_EVENT_NAME == "push"]
