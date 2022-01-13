@@ -29,8 +29,8 @@ phases:
       - ls
       - cd temp
       - echo Starting up $SCRIPT_NAME...
-      - chmod +x ./"$SCRIPT_NAME"
-      - ./"$SCRIPT_NAME"
+      - chmod +x ./$SCRIPT_NAME
+      - ./$SCRIPT_NAME
   post_build:
    commands:
      - echo Entering post-build phase...
