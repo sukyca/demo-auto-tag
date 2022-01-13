@@ -2,7 +2,6 @@ import os
 import shutil
 import time
 import json
-import boto3
 import psycopg2
 import datetime as dt
 
@@ -18,21 +17,13 @@ FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 clean_script_name = lambda script_name: script_name.split('__')[1] if script_name != '<< Flyway Baseline >>' else None
 clean_schema_scripts = lambda schema_scripts: {db: {schema_name: set([clean_script_name(script_name) for script_name in schema_scripts[db][schema_name]]) for schema_name in schema_scripts[db].keys()} for db in schema_scripts.keys()}
 
-def get_connection_secret():
-    secret_name = "ab-demo/postgresql-rds"
-    region_name = "eu-central-1"
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-    secret_value_response = client.get_secret_value(
-        SecretId=secret_name
-    )
-
-    return json.loads(secret_value_response['SecretString'])
-
-connection_details = get_connection_secret()
+connection_details = {
+    'host': os.getenv('DEVDB_HOST'),
+    'port': os.getenv('DEVDB_PORT'),
+    'database': os.getenv('DEVDB_DATABASE'),
+    'user': os.getenv('DEVDB_USER'),
+    'password': os.getenv('DEVDB_PASSWORD')
+}
 
 def get_deployed_flyway_scripts(schema='public'):
     conn = psycopg2.connect(**connection_details)
