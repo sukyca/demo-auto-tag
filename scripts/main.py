@@ -165,15 +165,15 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
         os.mkdir(CONFIG_DIR)
     
     configuration = [
-        'flyway.url=jdbc:postgresql://{host}:{port}/{database}'.format(**connection_details),
+        'flyway.url=jdbc:postgresql://${DEVDB_HOST}:${DEVDB_PORT}/${DEVDB_DATABASE}',
+        'flyway.user=${DEVDB_USER}',
+        'flyway.password=${DEVDB_PASSWORD}',
+        
         'flyway.baselineOnMigrate=true',
         'flyway.ignoreMissingMigrations=true',
         'flyway.cleanDisabled=true',
         'flyway.createSchemas=false',
-        'flyway.validateMigrationNaming=true',
-        
-        'flyway.user={user}'.format(**connection_details),
-        'flyway.password={password}'.format(**connection_details)
+        'flyway.validateMigrationNaming=true'
     ]
     for db in repo_schema_scripts.keys():
         for schema_name in repo_schema_scripts[db].keys():
