@@ -4,6 +4,7 @@ on:
   push:
     #branches:
       #- production
+      #- development
 jobs:
   build:
     name: CodeBuild
