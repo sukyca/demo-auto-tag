@@ -22,7 +22,7 @@ phases:
     commands:
       - ls
       - cd scripts 
-      - python main.py
+      #- python main.py
       - cd ..
       - ls
       - cd temp
