@@ -229,6 +229,7 @@ def main():
     generate_flyway_commands(scripts_to_deploy, command='validate', environment='development')
     generate_flyway_commands(scripts_to_deploy, command='migrate', environment='development')
 
+
 if __name__ == '__main__':
     print(json.dumps(dict(os.environ), indent=2))
     main()
