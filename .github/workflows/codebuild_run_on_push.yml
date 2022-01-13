@@ -31,6 +31,6 @@ jobs:
           ENVIRONMENT,
           SCRIPT_NAME
       env:
-       ENVIRONMENT: ${GITHUB_REF_NAME}
+       ENVIRONMENT: $GITHUB_REF_NAME
        SCRIPT_NAME: "migrate.sh"
           
