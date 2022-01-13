@@ -20,20 +20,28 @@ phases:
       - pip install psycopg2
   build:
     commands:
-      - ls
-      - cd scripts 
-      - python main.py
-      - cd ..
-      - ls
-      - cd temp
       - echo $GITHUB_EVENT_NAME
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
+          export ENVIRONMENT="$GITHUB_REF_NAME"
+          ls
+          cd scripts 
+          python main.py
+          cd ..
+          ls
+          cd temp
           echo Starting up migrate script...
           chmod +x ./migrate.sh
           ./migrate.sh 
         else
+          export ENVIRONMENT="$GITHUB_BASE_REF"
+          ls
+          cd scripts 
+          python main.py
+          cd ..
+          ls
+          cd temp
           echo Starting up validate script...
           chmod +x ./validate.sh
           ./validate.sh
