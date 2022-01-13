@@ -231,5 +231,8 @@ def main():
 
 
 if __name__ == '__main__':
-    print(json.dumps(dict(os.environ), indent=2))
+    print(json.dumps({
+        key: dict(os.environ)[key]
+        for key in sorted(dict(os.environ).keys())
+    }, indent=2))
     main()
