@@ -169,7 +169,7 @@ def generate_flyway_filesystem(scripts_to_deploy):
                     }
                 else:
                     content = {
-                        'original_file': 'V{}__' + clean_script_name(file_name) + '.sql',
+                        'original_file': 'V{}__' + utils.clean_script_name(file_name) + '.sql',
                         'new_file': file_name.format(version) + '.sql'
                     }
                 flyway_filesystem[db][schema_name].append(content)
