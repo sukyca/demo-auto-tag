@@ -1,7 +1,7 @@
 name: Run CodeBuild on pull request
 
 on:
-  pull_request:
+  #pull_request:
     #branches:
       #- production
       #- development
