@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import time
 import json
@@ -272,5 +273,5 @@ def main(environment):
 
 
 if __name__ == '__main__':
-    environment = os.getenv('environment', 'development')
+    environment = os.getenv('ENVIRONMENT', 'development')
     main(environment)
