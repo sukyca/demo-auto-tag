@@ -1,7 +1,6 @@
 name: Run CodeBuild on pull request
 
 on:
-  #workflow_dispatch:
   pull_request:
     branches:
       - production
@@ -29,3 +28,9 @@ jobs:
       with:
         project-name: ABcodebuild
         buildspec-override: ./buildspec.yml
+        env-vars-for-codebuild: |
+          ENVIRONMENT,
+          SCRIPT_NAME
+      env:
+       ENVIRONMENT: ${{ github.base_ref }}
+       SCRIPT_NAME: "validate.sh"
