@@ -32,7 +32,7 @@ jobs:
       run: |
         if [ ${{ steps.set_env_name.outputs.env_name }} == 'development' ]
         then
-          echo "::set-output name=secret_name::arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st
+          echo "::set-output name=secret_name::arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st"
         else
           echo "::set-output name=secret_name::arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S"
         fi
