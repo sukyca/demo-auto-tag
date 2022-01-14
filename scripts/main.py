@@ -25,6 +25,7 @@ logging.basicConfig(
     level=logging.INFO,
     stream=sys.stdout
 )
+
 logger = logging.getLogger(ENVIRONMENT)
 
 conn_details = {
