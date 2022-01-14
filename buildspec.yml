@@ -1,17 +1,11 @@
 version: 0.2
 env:
   secrets-manager:
-    DEV_HOST: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st:host"
-    DEV_PORT: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st:port"
-    DEV_DATABASE: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st:database"
-    DEV_USER: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st:user"
-    DEV_PASSWORD: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st:password"
-    
-    PROD_HOST: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S:host"
-    PROD_PORT: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S:port"
-    PROD_DATABASE: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S:database"
-    PROD_USER: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S:user"
-    PROD_PASSWORD: "arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S:password"
+    HOST: "$SECRET_NAME:host"
+    PORT: "$SECRET_NAME:port"
+    DATABASE: "$SECRET_NAME:database"
+    USER: "$SECRET_NAME:user"
+    PASSWORD: "$SECRET_NAME:password"
 phases:
   pre_build:
     commands:
