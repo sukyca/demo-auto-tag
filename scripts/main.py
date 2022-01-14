@@ -24,28 +24,17 @@ logger = logging.getLogger(ENVIRONMENT)
 logger.addHandler(stdout_handler)
 logger.setLevel(logging.INFO)
 
-dev_conn_details = {
-    'host': os.getenv('DEV_HOST'),
-    'port': os.getenv('DEV_PORT'),
-    'database': os.getenv('DEV_DATABASE'),
-    'user': os.getenv('DEV_USER'),
-    'password': os.getenv('DEV_PASSWORD'),
+conn_details = {
+    'host': os.getenv('HOST'),
+    'port': os.getenv('PORT'),
+    'database': os.getenv('DATABASE'),
+    'user': os.getenv('USER'),
+    'password': os.getenv('PASSWORD'),
 }
 
-prod_conn_details = {
-    'host': os.getenv('PROD_HOST'),
-    'port': os.getenv('PROD_PORT'),
-    'database': os.getenv('PROD_DATABASE'),
-    'user': os.getenv('PROD_USER'),
-    'password': os.getenv('PROD_PASSWORD'),
-}
 
-def get_deployed_flyway_scripts(schema, environment):
-    creds = {
-        'development': dev_conn_details,
-        'production': prod_conn_details,
-    }
-    conn = psycopg2.connect(**creds[environment])
+def get_deployed_flyway_scripts(schema):
+    conn = psycopg2.connect(**conn_details)
     cursor = conn.cursor()
     try:
         cursor.execute('SELECT * FROM "{}".flyway_schema_history'.format(schema))
@@ -87,13 +76,13 @@ def get_repo_schema_scripts():
                 repo_schema_scripts[db][schema].append(item.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
-def get_db_schema_scripts(repo_schema_scripts, environment='development'):
+def get_db_schema_scripts(repo_schema_scripts):
     db_schema_scripts = {}
     for db in repo_schema_scripts.keys():
         db_schema_scripts[db] = {}
         for schema_name in repo_schema_scripts[db].keys():
             db_schema_scripts[db][schema_name] = []
-            for script_name in get_deployed_flyway_scripts(schema=schema_name, environment=environment):
+            for script_name in get_deployed_flyway_scripts(schema=schema_name):
                 db_schema_scripts[db][schema_name].append(script_name.replace('.sql', '')) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
@@ -152,14 +141,10 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
             
             deployed = _rename_deployed_scripts(repo_scripts.intersection(db_scripts), db_schema_scripts[db][schema_name])
             to_deploy = _rename_to_deploy_scripts(repo_scripts.difference(db_scripts))        
-            if to_deploy:
-                new_scripts[db].update({schema_name: to_deploy})
+            new_scripts[db].update({schema_name: to_deploy})
             scripts_to_deploy[db][schema_name] = _get_sorted_files(deployed + to_deploy)
     
-    if new_scripts:
-        logger.info("[INFO] Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
-    else:
-        logger.info("[INFO] No scripts to deploy")
+    logger.info("[INFO] Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
     return scripts_to_deploy
 
 def generate_flyway_filesystem(scripts_to_deploy):
@@ -208,20 +193,10 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     if not os.path.exists(CONFIG_DIR):
         os.mkdir(CONFIG_DIR)
     
-    creds = {
-        'development': [
-            'flyway.url=jdbc:postgresql://${DEV_HOST}:${DEV_PORT}/${DEV_DATABASE}',
-            'flyway.user=${DEV_USER}',
-            'flyway.password=${DEV_PASSWORD}'
-        ],
-        'production': [
-            'flyway.url=jdbc:postgresql://${PROD_HOST}:${PROD_PORT}/${PROD_DATABASE}',
-            'flyway.user=${PROD_USER}',
-            'flyway.password=${PROD_PASSWORD}'
-        ]
-    }
-    
-    configuration = creds[environment] + [
+    configuration = [
+        'flyway.url=jdbc:postgresql://${HOST}:${PORT}/${DATABASE}',
+        'flyway.user=${USER}',
+        'flyway.password=${PASSWORD}',
         'flyway.baselineOnMigrate=true',
         'flyway.ignoreMissingMigrations=true',
         'flyway.cleanDisabled=true',
@@ -258,13 +233,9 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
 
 def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
-    db_schema_scripts = get_db_schema_scripts(repo_schema_scripts, environment)
+    db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
-
-    #logger.info("Repo schema scripts", json.dumps(repo_schema_scripts, indent=2))
-    #logger.info("DB schema scripts", json.dumps(db_schema_scripts, indent=2))
-    #logger.info("Scripts to deploy", json.dumps(scripts_to_deploy, indent=2))
-
+    
     utils.destroy_flyway_filesystem(scripts_to_deploy, FLYWAY_FILESYSTEM_DIR)
     logger.info("Generating Flyway filesystem")
     flyway_filesystem = generate_flyway_filesystem(scripts_to_deploy)
