@@ -38,7 +38,7 @@ jobs:
         fi
         
     - name: Run CodeBuild
-    - uses: aws-actions/aws-codebuild-run-build@v1
+      uses: aws-actions/aws-codebuild-run-build@v1
       with:
         project-name: ABcodebuild
         buildspec-override: ./buildspec.yml
@@ -50,9 +50,3 @@ jobs:
        ENVIRONMENT: ${{ steps.set_env_name.outputs.env_name }}
        SECRET_NAME: ${{ steps.set_secret_name.outputs.secret_name }}
        SCRIPT_NAME: "migrate.sh"
-       
-  
-      
-      
-      
-          
