@@ -1,5 +1,3 @@
-import os
-import shutil
 
 def clean_script_name(script_name):
     if script_name == '<< Flyway Baseline >>':
