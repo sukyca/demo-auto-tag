@@ -19,7 +19,10 @@ CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
 FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
 stdout_handler = logging.StreamHandler(sys.stdout)
+stdout_handler.setFormatter(formatter)
+
 logger = logging.getLogger(ENVIRONMENT)
 logger.addHandler(stdout_handler)
 logger.setLevel(logging.INFO)
@@ -187,6 +190,11 @@ def generate_flyway_filesystem(scripts_to_deploy):
                 original_file = os.path.join(REPO_DIR, db, schema_name, content['original_file'])
                 new_file = os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name, content['new_file'])
                 shutil.copyfile(original_file, new_file)
+    
+    logger.info("[INFO] Generated Flyway filesystem:\n{}".format(json.dumps({
+        db + '.' + schema_name: str(len(flyway_filesystem[db][schema_name])) + ' files' 
+        for db in flyway_filesystem.keys() for schema_name in flyway_filesystem[db].keys()
+    }, indent=4)))
     return flyway_filesystem
 
 def generate_flyway_config(repo_schema_scripts, environment='development'):
@@ -210,6 +218,8 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
                 os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name.lower())), 
                 configuration + ['flyway.schemas={}'.format(schema_name)]
             )
+    
+    logger.info("[INFO] Generated configuration:\n{}".format(json.dumps(configuration, indent=4)))
     return configuration
 
 def generate_flyway_commands(scripts_to_deploy, environment, command):
@@ -228,6 +238,7 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
             migrate_cmds.append(cmd)
     
     utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
+    logger.info("[INFO] Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds
 
 
@@ -236,23 +247,15 @@ def main(environment):
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
-    utils.destroy_flyway_filesystem(scripts_to_deploy, FLYWAY_FILESYSTEM_DIR)
-    logger.info("Generating Flyway filesystem")
-    flyway_filesystem = generate_flyway_filesystem(scripts_to_deploy)
-    logger.info("[INFO] Generated:\n{}".format(json.dumps({
-        db + '.' + schema_name: str(len(flyway_filesystem[db][schema_name])) + ' files' 
-        for db in flyway_filesystem.keys() for schema_name in flyway_filesystem[db].keys()
-    }, indent=4)))
+    logger.info("[INFO] Generating Flyway filesystem")
+    generate_flyway_filesystem(scripts_to_deploy)
     
-    logger.info("Generating Flyway config")
-    flyway_config = generate_flyway_config(scripts_to_deploy, environment)
-    logger.info("[INFO] Generated configuration:\n{}".format(json.dumps(flyway_config, indent=4)))
+    logger.info("[INFO] Generating Flyway config")
+    generate_flyway_config(scripts_to_deploy, environment)
     
-    logger.info("Generating Flyway migrate/validate commands")
-    v_commands = generate_flyway_commands(scripts_to_deploy, environment, command='validate')
-    logger.info("[INFO] Generated validate commands:\n{}".format(json.dumps(v_commands, indent=4)))
-    m_commands = generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
-    logger.info("[INFO] Generated migrate commands:\n{}".format(json.dumps(m_commands, indent=4)))
+    logger.info("[INFO] Generating Flyway migrate/validate commands")
+    generate_flyway_commands(scripts_to_deploy, environment, command='validate')
+    generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
 
 
 if __name__ == '__main__':

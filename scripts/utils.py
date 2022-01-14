@@ -24,8 +24,3 @@ def write_to_file(path, content):
         content = '\n'.join(content)
     with open(path, 'w') as f:
         f.write(content)
-
-def destroy_flyway_filesystem(repo_schema_scripts, dir):
-    for db in repo_schema_scripts.keys():
-        if os.path.exists(os.path.join(dir, db)):
-            shutil.rmtree(os.path.join(dir, db))
