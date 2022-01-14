@@ -19,16 +19,13 @@ CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
 FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
-formatter = logging.Formatter(
-    '[%(levelname)s] %(asctime)s %(name)s: %(message)s',
-    datefmt='%Y/%m/%d %H:%M:%S'
+logging.basicConfig(
+    format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
+    datefmt='%Y/%m/%d %H:%M:%S',
+    level=logging.INFO,
+    stream=sys.stdout
 )
-stdout_handler = logging.StreamHandler(sys.stdout)
-stdout_handler.setFormatter(formatter)
-
 logger = logging.getLogger(ENVIRONMENT)
-logger.addHandler(stdout_handler)
-logger.setLevel(logging.INFO)
 
 conn_details = {
     'host': os.getenv('HOST'),
