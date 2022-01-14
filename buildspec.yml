@@ -24,7 +24,13 @@ phases:
       - cd temp
       - echo Starting up $SCRIPT_NAME...
       - chmod +x ./$SCRIPT_NAME
-      - ./$SCRIPT_NAME
+      - |
+        if [ ${{ github.event_name }} = "push" ]
+        then 
+         chmod +x ./validate.sh
+         ./validate.sh
+        fi
+      - ./$SCRIPT_NAME  
   post_build:
    commands:
      - echo Entering post-build phase...
