@@ -1,9 +1,9 @@
 import os
 import sys
-import logging
-import shutil
 import time
 import json
+import shutil
+import logging
 import psycopg2
 import datetime as dt
 
@@ -19,7 +19,10 @@ CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
 FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(message)s')
+formatter = logging.Formatter(
+    '[%(levelname)s] %(asctime)s %(name)s: %(message)s',
+    datefmt='%Y/%m/%d %H:%M:%S'
+)
 stdout_handler = logging.StreamHandler(sys.stdout)
 stdout_handler.setFormatter(formatter)
 
@@ -147,7 +150,7 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
             new_scripts[db].update({schema_name: to_deploy})
             scripts_to_deploy[db][schema_name] = _get_sorted_files(deployed + to_deploy)
     
-    logger.info("[INFO] Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
+    logger.info("Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
     return scripts_to_deploy
 
 def generate_flyway_filesystem(scripts_to_deploy):
@@ -191,7 +194,7 @@ def generate_flyway_filesystem(scripts_to_deploy):
                 new_file = os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name, content['new_file'])
                 shutil.copyfile(original_file, new_file)
     
-    logger.info("[INFO] Generated Flyway filesystem:\n{}".format(json.dumps({
+    logger.info("Generated Flyway filesystem:\n{}".format(json.dumps({
         db + '.' + schema_name: str(len(flyway_filesystem[db][schema_name])) + ' files' 
         for db in flyway_filesystem.keys() for schema_name in flyway_filesystem[db].keys()
     }, indent=4)))
@@ -219,7 +222,7 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
                 configuration + ['flyway.schemas={}'.format(schema_name)]
             )
     
-    logger.info("[INFO] Generated configuration:\n{}".format(json.dumps(configuration, indent=4)))
+    logger.info("Generated configuration:\n{}".format(json.dumps(configuration, indent=4)))
     return configuration
 
 def generate_flyway_commands(scripts_to_deploy, environment, command):
@@ -238,7 +241,7 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
             migrate_cmds.append(cmd)
     
     utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
-    logger.info("[INFO] Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
+    logger.info("Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds
 
 
@@ -247,13 +250,13 @@ def main(environment):
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
-    logger.info("[INFO] Generating Flyway filesystem")
+    logger.info("Generating Flyway filesystem")
     generate_flyway_filesystem(scripts_to_deploy)
     
-    logger.info("[INFO] Generating Flyway config")
+    logger.info("Generating Flyway config")
     generate_flyway_config(scripts_to_deploy, environment)
     
-    logger.info("[INFO] Generating Flyway migrate/validate commands")
+    logger.info("Generating Flyway migrate/validate commands")
     generate_flyway_commands(scripts_to_deploy, environment, command='validate')
     generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
 
