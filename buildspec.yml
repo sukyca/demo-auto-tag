@@ -14,6 +14,7 @@ phases:
       - pip install psycopg2
   build:
     commands:
+      - pwd
       - echo $GITHUB_EVENT_NAME
       - echo $ENVIRONMENT
       - ls -l
