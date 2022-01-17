@@ -233,6 +233,7 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name.lower()))
             output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
+            utils.write_to_file(output_file, '')
             cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {}'.format(
                 location, config_file, schema_name, output_file, command
             )
