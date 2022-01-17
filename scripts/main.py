@@ -145,7 +145,7 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
             
             deployed = _rename_deployed_scripts(repo_scripts.intersection(db_scripts), db_schema_scripts[db][schema_name])
             to_deploy = _rename_to_deploy_scripts(repo_scripts.difference(db_scripts))        
-            new_scripts[db].update({schema_name: to_deploy})
+            new_scripts[db].update({schema_name: _get_sorted_files(to_deploy)})
             scripts_to_deploy[db][schema_name] = _get_sorted_files(deployed + to_deploy)
     
     logger.info("Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
