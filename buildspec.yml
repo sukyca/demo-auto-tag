@@ -22,15 +22,16 @@ phases:
       - cd ..
       - ls
       - cd temp
-      - echo Starting up $SCRIPT_NAME...
-      - chmod +x ./$SCRIPT_NAME
+      - echo "Event name: "$GITHUB_EVENT_NAME""
       - |
         if [ "$GITUB_EVENT_NAME" = "push" ]
         then 
          chmod +x ./validate.sh
-         ./validate.sh
+         bash validate.sh
         fi
-      - ./$SCRIPT_NAME  
+      - echo Starting up $SCRIPT_NAME...
+      - chmod +x ./$SCRIPT_NAME
+      - bash $SCRIPT_NAME
   post_build:
    commands:
      - echo Entering post-build phase...
