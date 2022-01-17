@@ -27,11 +27,11 @@ phases:
         then
           echo Starting up validate.sh
           chmod +x ./validate.sh
-          while read line; do $("$line"); done < validate.sh
+          while read line; do $line; done < validate.sh
         fi
       - echo Starting up $SCRIPT_NAME...
       - chmod +x ./$SCRIPT_NAME
-      - while read line; do $("$line"); done < $SCRIPT_NAME
+      - while read line; do $line; done < $SCRIPT_NAME
   post_build:
    commands:
      - echo Entering post-build phase...
