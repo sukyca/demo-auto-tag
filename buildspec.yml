@@ -16,12 +16,12 @@ phases:
     commands:
       - echo $GITHUB_EVENT_NAME
       - echo $ENVIRONMENT
-      - ls -lR
+      - ls -l
       - cd scripts 
       - python main.py
       - cd ..
-      - ls -lR
       - cd temp
+      - ls -lR
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then

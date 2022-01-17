@@ -252,11 +252,11 @@ def main(environment):
     generate_flyway_filesystem(scripts_to_deploy)
     
     logger.info("Generating Flyway config")
-    generate_flyway_config(scripts_to_deploy, environment)
+    generate_flyway_config(repo_schema_scripts, environment)
     
     logger.info("Generating Flyway migrate/validate commands")
-    generate_flyway_commands(scripts_to_deploy, environment, command='validate')
-    generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
+    generate_flyway_commands(repo_schema_scripts, environment, command='validate')
+    generate_flyway_commands(repo_schema_scripts, environment, command='migrate')
 
 
 if __name__ == '__main__':
