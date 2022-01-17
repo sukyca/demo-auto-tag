@@ -14,8 +14,8 @@ phases:
       - pip install psycopg2
   build:
     commands:
-      - echo "$GITHUB_EVENT_NAME"
-      - echo "$ENVIRONMENT"
+      - echo $GITHUB_EVENT_NAME
+      - echo $ENVIRONMENT
       - ls
       - cd scripts 
       - python main.py
@@ -24,9 +24,10 @@ phases:
       - cd temp
       - |
         if [ "$GITUB_EVENT_NAME" = "push" ]
-        then 
-         chmod +x ./validate.sh
-         bash validate.sh
+        then
+          echo Starting up validate.sh
+          chmod +x ./validate.sh
+          bash validate.sh
         fi
       - echo Starting up $SCRIPT_NAME...
       - chmod +x ./$SCRIPT_NAME
