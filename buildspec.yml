@@ -23,7 +23,7 @@ phases:
       - ls
       - cd temp
       - |
-        if [ "$GITUB_EVENT_NAME" = "push" ]
+        if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
           echo Starting up validate.sh
           chmod +x ./validate.sh
