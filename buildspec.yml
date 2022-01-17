@@ -14,15 +14,14 @@ phases:
       - pip install psycopg2
   build:
     commands:
-      - echo $GITHUB_EVENT_NAME
-      - echo $ENVIRONMENT
+      - echo "$GITHUB_EVENT_NAME"
+      - echo "$ENVIRONMENT"
       - ls
       - cd scripts 
       - python main.py
       - cd ..
       - ls
       - cd temp
-      - echo "Event name: "$GITHUB_EVENT_NAME""
       - |
         if [ "$GITUB_EVENT_NAME" = "push" ]
         then 
