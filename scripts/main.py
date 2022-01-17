@@ -216,11 +216,11 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     for db in repo_schema_scripts.keys():
         for schema_name in repo_schema_scripts[db].keys():
             utils.write_to_file(
-                os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name.lower())), 
+                os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name)), 
                 configuration + ['flyway.schemas={}'.format(schema_name)]
             )
     
-    logger.info("Generated configuration:\n{}".format(json.dumps(configuration, indent=4)))
+    logger.info("Generated configuration @ {}:\n{}".format(CONFIG_DIR, json.dumps(configuration, indent=4)))
     return configuration
 
 def generate_flyway_commands(scripts_to_deploy, environment, command):
