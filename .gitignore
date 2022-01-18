@@ -3,6 +3,7 @@ scripts/debug.py
 temp/
 .env
 
+regexs.txt
 development_push.json
 development_pr.json
 production_push.json
