@@ -26,13 +26,14 @@ phases:
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
-          echo Starting up validate.sh
+          echo Starting up validate.sh...
           chmod +x ./validate.sh
-          while read line; do $line; done < validate.sh
+          ./validate.sh
+          echo "Exit code: "$?
         fi
       - echo Starting up $SCRIPT_NAME...
       - chmod +x ./$SCRIPT_NAME
-      - while read line; do $line; done < $SCRIPT_NAME
+      - ./$SCRIPT_NAME
   post_build:
    commands:
      - echo Entering post-build phase...
