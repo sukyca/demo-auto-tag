@@ -227,7 +227,7 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
     if not os.path.exists(FLYWAY_OUTPUT_DIR):
         os.mkdir(FLYWAY_OUTPUT_DIR)
     
-    migrate_cmds = []
+    migrate_cmds = ['set -e']
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
@@ -238,7 +238,6 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
                 location, config_file, schema_name, output_file, command
             )
             migrate_cmds.append(cmd)
-    
     utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
     logger.info("Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds

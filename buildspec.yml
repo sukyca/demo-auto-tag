@@ -23,18 +23,17 @@ phases:
       - cd ..
       - cd temp
       - ls -lR
+      - echo Starting up validate.sh...
+      - chmod +x ./validate.sh
+      - ./validate.sh
+  post_build:
+    commands:
+      - echo Entering post-build phase...
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
-          echo Starting up validate.sh...
-          chmod +x ./validate.sh
-          ./validate.sh
-          echo "Exit code: "$?
+          echo Starting up migrate.sh...
+          chmod +x ./migrate.sh
+          ./migrate.sh
         fi
-      - echo Starting up $SCRIPT_NAME...
-      - chmod +x ./$SCRIPT_NAME
-      - ./$SCRIPT_NAME
-  post_build:
-   commands:
-     - echo Entering post-build phase...
-     - echo Build finished on `date`
+      - echo Build finished on `date`
