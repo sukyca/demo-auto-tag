@@ -26,6 +26,7 @@ phases:
       - echo Starting up validate.sh...
       - chmod +x ./validate.sh
       - ./validate.sh
+      - echo $OUTPUT_CODES
   post_build:
     commands:
       - echo Entering post-build phase...

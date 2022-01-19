@@ -227,17 +227,18 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
     if not os.path.exists(FLYWAY_OUTPUT_DIR):
         os.mkdir(FLYWAY_OUTPUT_DIR)
     
-    migrate_cmds = ['set -e']
+    migrate_cmds = ['OUTPUT_CODES=""']
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name))
             output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
             utils.write_to_file(output_file, '')
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {} && if [ $? = 1 ]; then exit 1; fi'.format(
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {} && OUTPUT_CODES=""$OUTPUT_CODES"" $?"'.format(
                 location, config_file, schema_name, output_file, command
             )
             migrate_cmds.append(cmd)
+    migrate_cmds += ['export OUTPUT_CODES=$OUTPUT_CODES']
     utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
     logger.info("Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds
