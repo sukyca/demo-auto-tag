@@ -18,11 +18,9 @@ phases:
       - echo $GITHUB_EVENT_NAME
       - echo $ENVIRONMENT
       - ls -l
-      - cd scripts 
-      - python main.py
-      - cd ..
+      - python ./scripts/main.py
       - cd temp
-      - ls -lR
+      - ls -l
       - echo Starting up validate.sh...
       - chmod +x ./validate.sh && chmod +x ./check-validate.sh
       - ./validate.sh
@@ -30,6 +28,7 @@ phases:
   post_build:
     commands:
       - echo Entering post-build phase...
+      - if [[ "$CODEBUILD_BUILD_SUCCEEDING" == "0" ]]; then exit 1; fi
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
