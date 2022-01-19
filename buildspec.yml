@@ -24,9 +24,9 @@ phases:
       - cd temp
       - ls -lR
       - echo Starting up validate.sh...
-      - chmod +x ./validate.sh
+      - chmod +x ./validate.sh && chmod +x ./check-validate.sh
       - ./validate.sh
-      - echo $OUTPUT_CODES
+      - ./check-validate.sh
   post_build:
     commands:
       - echo Entering post-build phase...
@@ -34,7 +34,8 @@ phases:
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
           echo Starting up migrate.sh...
-          chmod +x ./migrate.sh
+          chmod +x ./migrate.sh && chmod +x ./check-migrate.sh
           ./migrate.sh
+          ./check-migrate.sh
         fi
       - echo Build finished on `date`

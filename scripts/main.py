@@ -227,22 +227,39 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
     if not os.path.exists(FLYWAY_OUTPUT_DIR):
         os.mkdir(FLYWAY_OUTPUT_DIR)
     
-    migrate_cmds = ['OUTPUT_CODES=""']
+    migrate_cmds = ['#!/bin/bash']
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name))
             output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
             utils.write_to_file(output_file, '')
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {} && OUTPUT_CODES="$\{OUTPUT_CODES\} $?"'.format(
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {}'.format(
                 location, config_file, schema_name, output_file, command
             )
             migrate_cmds.append(cmd)
-    migrate_cmds += ['export OUTPUT_CODES']
     utils.write_to_file(os.path.join(TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
     logger.info("Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds
 
+def generate_command_checks(scripts_to_deploy, command):
+    command_checks = '#!/bin/bash\n'
+    output_file_checks = []
+    for db in scripts_to_deploy.keys():
+        for schema_name in scripts_to_deploy[db].keys():
+            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
+            output_file_checks.append('-s "{}"'.format(output_file))
+    
+    command_checks += 'if [[ {} ]];\n'.format('\n\t|| '.join(output_file_checks))
+    command_checks += 'then\n'
+    for output_file_check in output_file_checks:
+        command_checks += '\tif [ {} ];\n\t\tthen cat {}\n\tfi\n'.format(output_file_check, output_file_check.replace('-s ', ''))
+    command_checks += '\texit 1\n'
+    command_checks += 'fi'
+    utils.write_to_file(os.path.join(TEMP_DIR, 'check-{}.sh'.format(command)), command_checks)
+    logger.info("Generated {} checks:\n{}".format(command, command_checks))
+    return command_checks
+    
 
 def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
@@ -253,11 +270,15 @@ def main(environment):
     generate_flyway_filesystem(scripts_to_deploy)
     
     logger.info("Generating Flyway config")
-    generate_flyway_config(repo_schema_scripts, environment)
+    generate_flyway_config(scripts_to_deploy, environment)
     
     logger.info("Generating Flyway migrate/validate commands")
-    generate_flyway_commands(repo_schema_scripts, environment, command='validate')
-    generate_flyway_commands(repo_schema_scripts, environment, command='migrate')
+    generate_flyway_commands(scripts_to_deploy, environment, command='validate')
+    generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
+    
+    logger.info("Generating Flyway migrate/validate checks")
+    generate_command_checks(scripts_to_deploy, command='validate')
+    generate_command_checks(scripts_to_deploy, command='migrate')
 
 
 if __name__ == '__main__':
