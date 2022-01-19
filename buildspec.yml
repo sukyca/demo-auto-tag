@@ -33,8 +33,7 @@ phases:
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
           echo Starting up migrate.sh...
-          chmod +x ./migrate.sh && chmod +x ./check-migrate.sh
+          chmod +x ./migrate.sh
           ./migrate.sh
-          ./check-migrate.sh
         fi
       - echo Build finished on `date`

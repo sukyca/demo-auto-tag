@@ -228,6 +228,8 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
         os.mkdir(FLYWAY_OUTPUT_DIR)
     
     migrate_cmds = ['#!/bin/bash']
+    if command == 'migrate':
+        migrate_cmds.append('set -x')
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
@@ -278,7 +280,7 @@ def main(environment):
     
     logger.info("Generating Flyway migrate/validate checks")
     generate_command_checks(scripts_to_deploy, command='validate')
-    generate_command_checks(scripts_to_deploy, command='migrate')
+    #generate_command_checks(scripts_to_deploy, command='migrate')
 
 
 if __name__ == '__main__':
