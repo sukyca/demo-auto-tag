@@ -29,7 +29,7 @@ phases:
     commands:
       - echo Entering post-build phase...
       - |
-        if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ]
+        if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
         then exit 1
         fi
       - |
