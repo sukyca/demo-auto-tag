@@ -8,6 +8,7 @@ import psycopg2
 import datetime as dt
 
 import utils
+import validate
 
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
@@ -77,7 +78,7 @@ def get_repo_schema_scripts():
         for schema in os.listdir(os.path.join(REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
             for item in os.listdir(os.path.join(REPO_DIR, db, schema)):
-                repo_schema_scripts[db][schema].append(item.replace('.sql', '')) # file_name = V{}__TABLE_NAME.sql
+                repo_schema_scripts[db][schema].append(item) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
 def get_db_schema_scripts(repo_schema_scripts):
@@ -87,7 +88,7 @@ def get_db_schema_scripts(repo_schema_scripts):
         for schema_name in repo_schema_scripts[db].keys():
             db_schema_scripts[db][schema_name] = []
             for script_name in get_deployed_flyway_scripts(schema=schema_name):
-                db_schema_scripts[db][schema_name].append(script_name.replace('.sql', '')) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
+                db_schema_scripts[db][schema_name].append(script_name) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
 def _rename_deployed_scripts(deployed, db_scripts):
@@ -168,13 +169,13 @@ def generate_flyway_filesystem(scripts_to_deploy):
                 version = dt.datetime.utcnow().strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
                 if file_name.startswith('V'):
                     content = {
-                        'original_file': 'V{}__' + utils.clean_script_name(file_name) + '.sql',
-                        'new_file': file_name.format(version) + '.sql'
+                        'original_file': 'V{}__' + utils.clean_script_name(file_name),
+                        'new_file': file_name.format(version)
                     }
                 else:
                     content = {
-                        'original_file': file_name + '.sql',
-                        'new_file': file_name + '.sql'
+                        'original_file': file_name,
+                        'new_file': file_name
                     }
                     
                 flyway_filesystem[db][schema_name].append(content)
@@ -265,6 +266,8 @@ def generate_command_checks(scripts_to_deploy, command):
 
 def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
+    #validate.validate_repo_scripts(repo_schema_scripts)
+    
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
