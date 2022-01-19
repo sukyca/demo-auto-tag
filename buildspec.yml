@@ -28,7 +28,10 @@ phases:
   post_build:
     commands:
       - echo Entering post-build phase...
-      - exit 1 if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
+      - |
+        if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ]
+        then exit 1
+        fi
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
