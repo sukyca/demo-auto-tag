@@ -209,6 +209,7 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
         'flyway.password=${PASSWORD}',
         'flyway.baselineOnMigrate=true',
         'flyway.ignoreMissingMigrations=true',
+        'flyway.ignorePendingMigrations=true',
         'flyway.cleanDisabled=true',
         'flyway.createSchemas=false',
         'flyway.validateMigrationNaming=true'
