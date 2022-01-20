@@ -14,10 +14,11 @@ phases:
   pre_build:
     commands:
       - echo Build started on `date`
-      - apt-get install -y libssl-dev libffi-dev
+      - virtualenv flyway_validate
+      - . flyway_validate/bin/activate
       - pip install --upgrade pip
       - pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v2.6.2/tested_requirements/requirements_39.reqs
-      - pip install snowflake-connector-python
+      - pip install snowflake-connector-python==2.6.2
       - wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.4.1/flyway-commandline-8.4.1-linux-x64.tar.gz | tar xvz 1> /dev/null && ln -s `pwd`/flyway-8.4.1/flyway /usr/local/bin 
   build:
     commands:

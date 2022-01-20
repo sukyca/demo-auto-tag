@@ -4,7 +4,7 @@ import time
 import json
 import shutil
 import logging
-import psycopg2
+import snowflake.connector
 import datetime as dt
 
 import utils
@@ -30,20 +30,21 @@ logging.basicConfig(
 logger = logging.getLogger(ENVIRONMENT)
 
 conn_details = {
-    'host': os.getenv('HOST'),
-    'port': os.getenv('PORT'),
-    'database': os.getenv('DATABASE'),
     'user': os.getenv('USER'),
     'password': os.getenv('PASSWORD'),
+    'account': os.getenv('ACCOUNT'),
 }
 
-
-def get_deployed_flyway_scripts(schema):
-    conn = psycopg2.connect(**conn_details)
+def get_deployed_flyway_scripts(database, schema):
+    conn_details.update({
+        'database': database,
+        'schema': schema
+    })
+    conn = snowflake.connector.connect(**conn_details)
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT * FROM "{}".flyway_schema_history'.format(schema))
-    except psycopg2.errors.UndefinedTable:
+        cursor.execute('SELECT * FROM flyway_schema_history')
+    except snowflake.connector.errors.ProgrammingError:
         cursor.close()
         conn.close()
         return []
@@ -87,7 +88,7 @@ def get_db_schema_scripts(repo_schema_scripts):
         db_schema_scripts[db] = {}
         for schema_name in repo_schema_scripts[db].keys():
             db_schema_scripts[db][schema_name] = []
-            for script_name in get_deployed_flyway_scripts(schema=schema_name):
+            for script_name in get_deployed_flyway_scripts(database=db, schema=schema_name):
                 db_schema_scripts[db][schema_name].append(script_name) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
@@ -203,8 +204,9 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     if not os.path.exists(CONFIG_DIR):
         os.mkdir(CONFIG_DIR)
     
+    all_configurations = []
     configuration = [
-        'flyway.url=jdbc:postgresql://${HOST}:${PORT}/${DATABASE}',
+        #'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db={db}',
         'flyway.user=${USER}',
         'flyway.password=${PASSWORD}',
         'flyway.baselineOnMigrate=true',
@@ -216,13 +218,15 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     ]
     
     for db in repo_schema_scripts.keys():
+        config = ['flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db] + configuration
         for schema_name in repo_schema_scripts[db].keys():
+            all_configurations.append(config + ['flyway.schemas={}'.format(schema_name)])
             utils.write_to_file(
                 os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name)), 
-                configuration + ['flyway.schemas={}'.format(schema_name)]
+                all_configurations[-1]
             )
     
-    logger.info("Generated configuration @ {}:\n{}".format(CONFIG_DIR, json.dumps(configuration, indent=4)))
+    logger.info("Generated configuration @ {}:\n{}".format(CONFIG_DIR, json.dumps(all_configurations, indent=4)))
     return configuration
 
 def generate_flyway_commands(scripts_to_deploy, environment, command):
@@ -236,9 +240,8 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name))
-            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
-            utils.write_to_file(output_file, '')
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" {}'.format(
+            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.json'.format(command, schema_name))
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'.format(
                 location, config_file, schema_name, output_file, command
             )
             migrate_cmds.append(cmd)
@@ -251,7 +254,7 @@ def generate_command_checks(scripts_to_deploy, command):
     output_file_checks = []
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
-            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.FlywayOutput.txt'.format(command, schema_name))
+            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.json'.format(command, schema_name))
             output_file_checks.append('-s "{}"'.format(output_file))
     
     command_checks += 'if [[ {} ]];\n'.format('\n\t|| '.join(output_file_checks))
