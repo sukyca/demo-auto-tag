@@ -17,4 +17,7 @@ def validate_repo_scripts(repo_schema_scripts):
                     pattern = REPEATABLE_MIGRATIONS
                 match = re.match(pattern, file_name)
                 if match is None:
-                    raise InvalidScriptName("Got '{}', validation ran using regex '{}'".format(file_name, pattern))
+                    raise InvalidScriptName("Script is located at '{path}'. Validation help: "
+                        "https://regexr.com/?expression={pattern}&text={script_name}".format(
+                            script_name=file_name, pattern=pattern, path=db + "." + schema_name
+                    ))

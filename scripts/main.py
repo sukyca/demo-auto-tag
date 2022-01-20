@@ -110,7 +110,7 @@ def _rename_to_deploy_scripts(to_deploy):
 
 def _get_sorted_files(files):
     versioned_files = []
-    non_versioned_files = []
+    repeatable_files = []
     for file_name in files:
         clean_file_name = utils.clean_script_name(file_name)
         if clean_file_name[0].isnumeric():
@@ -126,10 +126,10 @@ def _get_sorted_files(files):
         if file_name.startswith('V'):
             versioned_files.append(content)
         else:
-            non_versioned_files.append(content)
+            repeatable_files.append(content)
     sorted_v = sorted(versioned_files, key=lambda x: x['file_order'], reverse=False)
-    sorted_nonv = sorted(non_versioned_files, key=lambda x: x['file_order'], reverse=False)
-    return [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_nonv]
+    sorted_r = sorted(repeatable_files, key=lambda x: x['file_order'], reverse=False)
+    return [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_r]
 
 def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
     clean_repo_scripts = utils.clean_schema_scripts(repo_schema_scripts)
@@ -267,7 +267,10 @@ def generate_command_checks(scripts_to_deploy, command):
 
 def main(environment):
     repo_schema_scripts = get_repo_schema_scripts()
-    #validate.validate_repo_scripts(repo_schema_scripts)
+    
+    logger.info("Validating repository script names")
+    validate.validate_repo_scripts(repo_schema_scripts)
+    logger.info("Validation completed successfully")
     
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
