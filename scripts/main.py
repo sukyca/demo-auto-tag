@@ -42,11 +42,13 @@ def get_deployed_flyway_scripts(database, schema):
     })
     conn = snowflake.connector.connect(**conn_details)
     cursor = conn.cursor()
+    query = 'SELECT * FROM "flyway_schema_history"'
     try:
-        cursor.execute('SELECT * FROM flyway_schema_history')
+        cursor.execute(query)
     except snowflake.connector.errors.ProgrammingError:
         cursor.close()
         conn.close()
+        logger.error("Snowflake query '{}' execution failed".format(query))
         return []
 
     results = [res[4] for res in cursor.fetchall()]
