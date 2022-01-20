@@ -30,9 +30,8 @@ phases:
       - cd temp
       - ls -l
       - echo Starting up validate.sh...
-      - chmod +x ./validate.sh && chmod +x ./check-validate.sh
+      - chmod +x ./validate.sh
       - ./validate.sh
-      - ./check-validate.sh
   post_build:
     commands:
       - echo Entering post-build phase...
