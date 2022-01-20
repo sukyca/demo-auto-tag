@@ -288,8 +288,8 @@ def main(environment):
     generate_flyway_commands(scripts_to_deploy, environment, command='validate')
     generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
     
-    logger.info("Generating Flyway migrate/validate checks")
-    generate_command_checks(scripts_to_deploy, command='validate')
+    #logger.info("Generating Flyway migrate/validate checks")
+    #generate_command_checks(scripts_to_deploy, command='validate')
     #generate_command_checks(scripts_to_deploy, command='migrate')
 
 
