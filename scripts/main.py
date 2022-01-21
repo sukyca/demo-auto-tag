@@ -208,7 +208,6 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
     
     all_configurations = []
     configuration = [
-        #'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db={db}',
         'flyway.user=${USER}',
         'flyway.password=${PASSWORD}',
         'flyway.baselineOnMigrate=true',

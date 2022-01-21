@@ -14,8 +14,8 @@ phases:
   pre_build:
     commands:
       - echo Build started on `date`
-      - virtualenv flyway_validate
-      - . flyway_validate/bin/activate
+      - virtualenv venv
+      - . venv/bin/activate
       - pip install --upgrade pip
       - pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v2.6.2/tested_requirements/requirements_39.reqs
       - pip install snowflake-connector-python==2.6.2
