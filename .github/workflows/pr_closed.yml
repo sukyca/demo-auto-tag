@@ -1,0 +1,92 @@
+name: Close pull request
+
+on:
+  pull_request:
+    branches: [development, production]
+    types: [closed]
+
+jobs:
+  close_pull_request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: |
+          git config user.email "andrea.hrelja@associatedbank.com"
+          git config user.name "Andrea Hrelja"
+          #echo "$GITHUB_CONTEXT"
+
+      - name: Tag merge
+        if: ${{ github.event.pull_request.merged == true }}
+        run: |
+          case ${{ github.base_ref }} in
+            development)
+              TAG="dev-${{ github.head_ref }}"
+              ;;
+            test)
+              TAG="tst-${{ github.head_ref }}"
+              ;;
+            production)
+              TAG="prod-${{ github.head_ref }}"
+              ;;
+            *)
+              TAG=''
+              ;;
+          esac
+          
+          if [[ -z "$TAG" ]];
+          then 
+            echo 'Invalid branch name: got "${{ github.base_ref }}", expected one of ("development", "test", "production")'
+            exit 1
+          else
+            git tag -a "$TAG" -m "Add ${{ github.base_ref }} tag" ${{ github.event.pull_request.head.sha }}
+            git push origin "$TAG"
+          fi
+      
+      - name: Delete tags
+        if: ${{ github.base_ref == 'production' }}
+        run: |
+          DEV_TAG="dev-${{ github.head_ref }}"
+          PROD_TAG="prod-${{ github.head_ref }}"
+          
+          FEATURE_BRANCH_TAGS="$DEV_TAG $PROD_TAG"
+          ALL_TAGS_FOUND=true
+          NO_TAGS_FOUND=true
+          
+          git fetch origin ${{ github.head_ref }}
+          git checkout ${{ github.head_ref }}
+          
+          for tag in $FEATURE_BRANCH_TAGS;
+          do
+            if [[ -z $(git branch ${{ github.head_ref }} --contains $tag 2> /dev/null) ]];
+            then ALL_TAGS_FOUND=false
+            else NO_TAGS_FOUND=false
+            fi
+          done
+      
+          git checkout production
+          
+          if [[ "$ALL_TAGS_FOUND" == true && "$NO_TAGS_FOUND" == false && ${{ github.event.pull_request.merged }} == true ]];
+          then
+            echo 'Feature branch contains both dev and prod tags; Delete ${{ github.head_ref }} branch'
+            for tag in $FEATURE_BRANCH_TAGS;
+            do
+              git tag -d $tag
+              git push origin --delete $tag
+            done
+            
+            git branch -D ${{ github.head_ref }}
+            git push origin --delete ${{ github.head_ref }}
+          elif [[ "$ALL_TAGS_FOUND" == false && "$NO_TAGS_FOUND" == true && ${{ github.event.pull_request.merged }} == true ]];
+          then
+            echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.head_ref }} branch'
+            git branch -D ${{ github.head_ref }}
+            git push origin --delete ${{ github.head_ref }}
+          else
+            echo 'Feature branch HEAD does not point to the correct commit. No tags or branches were deleted.'
+            exit 0
+          fi

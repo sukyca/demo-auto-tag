@@ -1,0 +1,53 @@
+#Check to ensure the latest main brach commit matches the new branches initial commit
+
+name: Feature Branch Validation (1)
+
+on:
+  create:
+    tags-ignore: '**'
+
+jobs:
+  branch-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Production Branch
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+          ref: production
+            
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      
+      - name: Set production branch latest SHA
+        id: production_branch
+        shell: bash
+        run: |
+          echo "::set-output name=latest_sha::$(git rev-parse HEAD)"
+      
+      - name: Checkout Feature Branch
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+
+      - name: Print Production and New Branch Sha
+        run: |
+          echo "Feature Branch available SHA:"
+          git log --oneline
+          echo "Production Branch Latest SHA: ${{ steps.production_branch.outputs.latest_sha }}"
+
+      - name: Validate branch creation
+        run: |
+          if [ -z $(git branch ${{ github.ref_name }} --contains ${{ steps.production_branch.outputs.latest_sha }} 2> /dev/null) ]
+          then 
+            echo "Feature branch does not contain the latest production SHA. ${{ github.ref_name }} is not branched off of Production and is invalid"
+            git push origin --delete ${{ github.ref_name }}
+          else 
+            echo "Feature branch contains the latest production SHA. ${{ github.ref_name }} is branched off of Production and valid"
+          fi
+      #- name: Delete feature branch
+      #  if: ${{ (steps.feature_branch_parent.outputs.name != 'production') && (-z steps.feature_branch.outputs.dev_tag_exists) }}
+      #  run: git push origin --delete ${{ github.ref_name }}
+        

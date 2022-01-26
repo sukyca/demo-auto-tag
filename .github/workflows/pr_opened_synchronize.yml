@@ -1,0 +1,78 @@
+name: Open/Synchronise pull request
+
+on:
+  pull_request:
+    branches: [development, production]
+    types: [opened, synchronize]
+    
+
+jobs:
+  open_pull_request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: |
+          DEV_TAG="dev-${{ github.head_ref }}"
+          echo "DEV_TAG=$DEV_TAG" >> $GITHUB_ENV
+          echo "TAGGED_COMMIT_ID=$(git rev-list $DEV_TAG -n 1 2> /dev/null)" >> $GITHUB_ENV
+          #echo "$GITHUB_CONTEXT"
+      
+      - name: Validate Lower Environment Tags Exist
+        if: ${{ github.base_ref == 'production' }}
+        run: |
+          if [ -z ${{ env.TAGGED_COMMIT_ID }} ]; 
+          then
+            echo "Lower Environment (development) tag (${{ env.DEV_TAG }}) does not exist"
+            exit 1
+          else 
+            echo "Lower Environment (development) tag (${{ env.DEV_TAG }}) exists: ${{ env.TAGGED_COMMIT_ID }}"
+          fi
+      
+      - name: Validate Lower Environment Tag = Feature branch HEAD
+        if: ${{ github.base_ref == 'production' }}
+        run: |
+          FEATURE_BRANCH_LAST_COMMIT=${{ github.event.pull_request.head.sha }}
+                    
+          if [ "$FEATURE_BRANCH_LAST_COMMIT" = ${{ env.TAGGED_COMMIT_ID }} ];
+          then 
+            echo "Feature branch HEAD = Tagged COMMIT_ID"
+          else 
+            echo "Feature branch HEAD is not = Tagged COMMIT_ID"
+            exit 1
+          fi
+  run_codebuild:
+    name: Run CodeBuild
+    runs-on: ubuntu-latest
+    needs: open_pull_request
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+        
+    - name: Set ENVIRONMENT variable
+      id: set_env_name
+      run: |
+        echo "::set-output name=env_name::${{ github.base_ref }}"
+          
+    - name: Run CodeBuild
+      uses: aws-actions/aws-codebuild-run-build@v1
+      with:
+        project-name: ABcodebuild
+        buildspec-override: ./buildspec.yml
+        env-vars-for-codebuild: |
+          ENVIRONMENT
+      env:
+       ENVIRONMENT: ${{ steps.set_env_name.outputs.env_name }}
