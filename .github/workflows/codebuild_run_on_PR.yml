@@ -1,11 +1,7 @@
 name: Run CodeBuild on pull request
 
 on:
-  pull_request:
-    branches:
-      - production
-      - development
-    types: [opened, synchronize]
+  workflow_dispatch:
 jobs:
   build:
     name: CodeBuild
