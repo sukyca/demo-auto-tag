@@ -272,10 +272,9 @@ def make_flyway():
 
 if __name__ == '__main__':
     if '--debug' in sys.argv:
-        conn_details = conn_details = {
+        conn_details = {
             'user': 'ahrelja',
             'password': 'Iolap1go!',
-            'account': 'kv94459.us-east-2.aws'
+            'account': 'kv94459.us-east-2.aws',
         }
-    
     make_flyway()
