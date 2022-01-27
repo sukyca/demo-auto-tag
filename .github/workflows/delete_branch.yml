@@ -8,30 +8,29 @@ jobs:
   delete_feature_branch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Development Branch
+        uses: actions/checkout@v2
         with:
+          ref: development
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup environment variables
+        run: |
+          echo "DEV_TAG=dev-${{ github.event.ref }}" >> $GITHUB_ENV
+          echo "PROD_TAG=prod-${{ github.event.ref }}" >> $GITHUB_ENV
+      
       - name: Dump GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: |
-          git config user.email "andrea.hrelja@associatedbank.com"
-          git config user.name "Andrea Hrelja"
-          echo "$GITHUB_CONTEXT"
-          
+        run: echo "$GITHUB_CONTEXT"
+      
       - name: Validate deleted branch
         run: |
-          DEV_TAG="dev-${{ github.event.ref }}"
-          PROD_TAG="prod-${{ github.event.ref }}"
-          
-          FEATURE_BRANCH_TAGS="$DEV_TAG $PROD_TAG"
+          FEATURE_BRANCH_TAGS="${{ env.DEV_TAG }} ${{ env.PROD_TAG }}"
+
           ALL_TAGS_FOUND=true
           NO_TAGS_FOUND=true
-          
-          git pull --all
-          git checkout development
-          
+
           for tag in $FEATURE_BRANCH_TAGS;
           do
             if [[ -z $(git branch development --contains $tag 2> /dev/null) ]];
@@ -45,9 +44,7 @@ jobs:
           elif [[ "$ALL_TAGS_FOUND" == false && "$NO_TAGS_FOUND" == true ]];
             then echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.event.ref }} branch'
           else
-            echo Branch $DEV_TAG was not supposed to be deleted. Delete reverted
-            SHA=$(git rev-list -n 1 dev-${{ github.event.ref }})
-            echo $SHA
-            git checkout -b ${{ github.event.ref }} $SHA
+            echo 'Branch $DEV_TAG was not supposed to be deleted. Delete reverted'
+            git checkout -b ${{ github.event.ref }} $DEV_TAG
             git push origin ${{ github.event.ref }}
           fi

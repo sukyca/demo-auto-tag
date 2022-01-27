@@ -9,45 +9,38 @@ on:
 jobs:
   branch-validation:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Production Branch
+    steps:     
+      - name: Checkout Production
         uses: actions/checkout@v2
-        with: 
-          fetch-depth: 0
+        with:
+          fetch-depth: 1
           ref: production
-            
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      
-      - name: Set production branch latest SHA
-        id: production_branch
-        shell: bash
+
+      - name: Setup environment variables
         run: |
-          echo "::set-output name=latest_sha::$(git rev-parse HEAD)"
-      
-      - name: Checkout Feature Branch
+          echo "DEV_TAG=dev-${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "LAST_PROD_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+      - name: Checkout Repository
         uses: actions/checkout@v2
-        with: 
+        with:
           fetch-depth: 0
 
-      - name: Print Production and New Branch Sha
+      - name: Validate branch is branched off of Production or off of dev-tag
         run: |
-          echo "Feature Branch available SHA:"
-          git log --oneline
-          echo "Production Branch Latest SHA: ${{ steps.production_branch.outputs.latest_sha }}"
-
-      - name: Validate branch creation
-        run: |
-          if [ -z $(git branch ${{ github.ref_name }} --contains ${{ steps.production_branch.outputs.latest_sha }} 2> /dev/null) ]
+          if [[ -z $(git branch ${{ github.ref_name }} --contains ${{ env.LAST_PROD_SHA }}) ]];
           then 
-            echo "Feature branch does not contain the latest production SHA. ${{ github.ref_name }} is not branched off of Production and is invalid"
-            git push origin --delete ${{ github.ref_name }}
-          else 
-            echo "Feature branch contains the latest production SHA. ${{ github.ref_name }} is branched off of Production and valid"
+            echo "Feature branch != production. ${{ github.ref_name }} is not branched off of Production"
+
+            if [[ -z $(git branch ${{ github.ref_name }} --contains ${{ env.DEV_TAG }} 2> /dev/null) ]];
+            then
+              echo "Feature branch ${{ github.ref_name }} is invalid. Delete in progress"
+              git push origin --delete ${{ github.ref_name }}
+            else
+              echo "Feature branch ${{ github.ref_name }} is recreated using tag: ${{ env.DEV_TAG }}"
+            fi
+            
+          else
+            echo "Feature branch == production. ${{ github.ref_name }} is branched off of Production and is valid"
+          
           fi
-      #- name: Delete feature branch
-      #  if: ${{ (steps.feature_branch_parent.outputs.name != 'production') && (-z steps.feature_branch.outputs.dev_tag_exists) }}
-      #  run: git push origin --delete ${{ github.ref_name }}
-        
