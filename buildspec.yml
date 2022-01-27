@@ -30,7 +30,6 @@ phases:
   post_build:
     commands:
       - echo Entering post-build phase...
-      - cd ./scripts/
       - |
         if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
         then exit 1
