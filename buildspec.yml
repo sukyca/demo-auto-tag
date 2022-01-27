@@ -23,20 +23,14 @@ phases:
       - wget -q https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.33/slf4j-simple-1.7.33.jar -P ./flyway-8.4.1/lib/
   build:
     commands:
-      - pwd
-      - echo $GITHUB_EVENT_NAME
-      - echo $ENVIRONMENT
-      - ls -l
-      - python ./scripts/main.py
-      - ls -l
-      - cd temp
-      - ls -l
-      - echo Starting up validate.sh...
-      - chmod +x ./validate.sh
-      - ./validate.sh
+      - cd ./scripts/
+      - python make_flyway.py
+      - echo Starting up `flyway validate`...
+      - python run_flyway.py --validate
   post_build:
     commands:
       - echo Entering post-build phase...
+      - cd ./scripts/
       - |
         if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
         then exit 1
@@ -44,8 +38,7 @@ phases:
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
-          echo Starting up migrate.sh...
-          chmod +x ./migrate.sh
-          ./migrate.sh
+          echo Starting up `flyway migrate`...
+          python run_flyway.py --migrate
         fi
       - echo Build finished on `date`

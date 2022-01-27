@@ -3,10 +3,10 @@ name: Run CodeBuild on push
 on:
   push:
     branches:
-     #- production
+      - production
       - development
 jobs:
-  build:
+  run_codebuild:
     name: CodeBuild
     runs-on: ubuntu-latest
     steps:
@@ -18,35 +18,12 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
+        aws-region: us-east-1
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-        
-    - name: Set ENVIRONMENT variable
-      id: set_env_name
-      run: |
-        echo "::set-output name=env_name::${{ github.ref_name }}"
-          
-    - name: Set SECRET_NAME variable
-      id: set_secret_name
-      run: |
-        if [ ${{ steps.set_env_name.outputs.env_name }} == 'development' ]
-        then
-          echo "::set-output name=secret_name::arn:aws:secretsmanager:eu-central-1:868318271924:secret:development/ab-demo/postgresql-credentials-IAc9st"
-        else
-          echo "::set-output name=secret_name::arn:aws:secretsmanager:eu-central-1:868318271924:secret:production/ab-demo/postgresql-credentials-QzZs8S"
-        fi
-        
+
     - name: Run CodeBuild
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
         project-name: ABcodebuild
         buildspec-override: ./buildspec.yml
-        env-vars-for-codebuild: |
-          ENVIRONMENT,
-          SECRET_NAME,
-          SCRIPT_NAME
-      env:
-       ENVIRONMENT: ${{ steps.set_env_name.outputs.env_name }}
-       SECRET_NAME: ${{ steps.set_secret_name.outputs.secret_name }}
-       SCRIPT_NAME: "migrate.sh"

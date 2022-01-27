@@ -6,6 +6,9 @@ REPEATABLE_MIGRATIONS = r'^R__[a-zA-Z0-9][a-zA-Z0-9_]+\.sql$'
 class InvalidScriptName(Exception):
     pass
 
+class InvalidFlywayRunArguments(Exception):
+    pass
+
 def validate_repo_scripts(repo_schema_scripts):
     for db in repo_schema_scripts.keys():
         for schema_name in repo_schema_scripts[db].keys():
@@ -21,3 +24,12 @@ def validate_repo_scripts(repo_schema_scripts):
                         "https://regexr.com/?expression={pattern}&text={script_name}".format(
                             script_name=file_name, pattern=pattern, path=db + "." + schema_name
                     ))
+
+
+def validate_run_flyway_args(args):
+    if len(args) != 1:
+        raise InvalidFlywayRunArguments('Expected one argument, got {}'.format(len(args)))
+    arg = args[0]
+    accepted_args = ('--validate', '--migrate')
+    if arg not in accepted_args:
+        raise InvalidFlywayRunArguments('Expected one of {}, got {}'.format(accepted_args, arg))

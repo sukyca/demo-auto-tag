@@ -3,31 +3,20 @@ import sys
 import time
 import json
 import shutil
-import logging
 import snowflake.connector
 import datetime as dt
 
 import utils
 import validate
 
-ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+from config import get_logger
+from config import REPO_DIR
+from config import TEMP_DIR
+from config import FLYWAY_CONFIG_DIR
+from config import FLYWAY_FILESYSTEM_DIR
+from config import FLYWAY_OUTPUT_DIR
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-REPO_DIR = os.path.join(BASE_DIR, 'ab')
-TEMP_DIR = os.path.join(BASE_DIR, 'temp')
-
-CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
-FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
-FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
-
-logging.basicConfig(
-    format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
-    datefmt='%Y/%m/%d %H:%M:%S',
-    level=logging.INFO,
-    stream=sys.stdout
-)
-
-logger = logging.getLogger(ENVIRONMENT)
+logger = get_logger()
 
 conn_details = {
     'user': os.getenv('USER'),
@@ -55,6 +44,7 @@ def get_deployed_flyway_scripts(database, schema):
     cursor.close()
     conn.close()
     return results
+
 
 def get_repo_schema_scripts():
     """Traverse all database/schema level folders in repo
@@ -84,6 +74,7 @@ def get_repo_schema_scripts():
                 repo_schema_scripts[db][schema].append(item) # file_name = V{}__TABLE_NAME.sql
     return repo_schema_scripts
 
+
 def get_db_schema_scripts(repo_schema_scripts):
     db_schema_scripts = {}
     for db in repo_schema_scripts.keys():
@@ -94,6 +85,7 @@ def get_db_schema_scripts(repo_schema_scripts):
                 db_schema_scripts[db][schema_name].append(script_name) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
     return db_schema_scripts
 
+
 def _rename_deployed_scripts(deployed, db_scripts):
     deployed_scripts = []
     for script_name in db_scripts:
@@ -101,6 +93,7 @@ def _rename_deployed_scripts(deployed, db_scripts):
             if script_name.endswith(file_name):
                 deployed_scripts.append(script_name)
     return deployed_scripts
+
 
 def _rename_to_deploy_scripts(to_deploy):
     to_deploy_scripts = []
@@ -110,6 +103,7 @@ def _rename_to_deploy_scripts(to_deploy):
         else:
             to_deploy_scripts.append('V{}__' + file_name)
     return to_deploy_scripts
+
 
 def _get_sorted_files(files):
     versioned_files = []
@@ -134,6 +128,7 @@ def _get_sorted_files(files):
     sorted_r = sorted(repeatable_files, key=lambda x: x['file_order'], reverse=False)
     return [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_r]
 
+
 def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
     clean_repo_scripts = utils.clean_schema_scripts(repo_schema_scripts)
     clean_db_scripts = utils.clean_schema_scripts(db_schema_scripts)
@@ -154,6 +149,7 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
     
     logger.info("Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
     return scripts_to_deploy
+
 
 def generate_flyway_filesystem(scripts_to_deploy):
     if not os.path.exists(TEMP_DIR):
@@ -202,9 +198,10 @@ def generate_flyway_filesystem(scripts_to_deploy):
     }, indent=4)))
     return flyway_filesystem
 
-def generate_flyway_config(repo_schema_scripts, environment='development'):
-    if not os.path.exists(CONFIG_DIR):
-        os.mkdir(CONFIG_DIR)
+
+def generate_flyway_config(repo_schema_scripts):
+    if not os.path.exists(FLYWAY_CONFIG_DIR):
+        os.mkdir(FLYWAY_CONFIG_DIR)
     
     all_configurations = []
     configuration = [
@@ -223,25 +220,26 @@ def generate_flyway_config(repo_schema_scripts, environment='development'):
         for schema_name in repo_schema_scripts[db].keys():
             all_configurations.append(config + ['flyway.schemas={}'.format(schema_name)])
             utils.write_to_file(
-                os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name)), 
+                os.path.join(FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
                 all_configurations[-1]
             )
     
-    logger.info("Generated configuration @ {}:\n{}".format(CONFIG_DIR, json.dumps(all_configurations, indent=4)))
+    logger.info("Generated configuration @ {}:\n{}".format(FLYWAY_CONFIG_DIR, json.dumps(all_configurations, indent=4)))
     return configuration
 
-def generate_flyway_commands(scripts_to_deploy, environment, command):
+
+def generate_flyway_commands(scripts_to_deploy, command):
     if not os.path.exists(FLYWAY_OUTPUT_DIR):
         os.mkdir(FLYWAY_OUTPUT_DIR)
+    if not os.path.exists(os.path.join(FLYWAY_OUTPUT_DIR, command)):
+        os.mkdir(os.path.join(FLYWAY_OUTPUT_DIR, command))
     
-    migrate_cmds = ['#!/bin/bash']
-    if command == 'migrate':
-        migrate_cmds.append('set -x')
+    migrate_cmds = []
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(FLYWAY_FILESYSTEM_DIR, db, schema_name))
-            config_file = os.path.join(CONFIG_DIR, '{}.{}.config'.format(environment, schema_name))
-            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.json'.format(command, schema_name))
+            config_file = os.path.join(FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
+            output_file = os.path.join(FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
             cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'.format(
                 location, config_file, schema_name, output_file, command
             )
@@ -250,26 +248,8 @@ def generate_flyway_commands(scripts_to_deploy, environment, command):
     logger.info("Generated {} commands:\n{}".format(command, json.dumps(migrate_cmds, indent=4)))
     return migrate_cmds
 
-def generate_command_checks(scripts_to_deploy, command):
-    command_checks = '#!/bin/bash\n'
-    output_file_checks = []
-    for db in scripts_to_deploy.keys():
-        for schema_name in scripts_to_deploy[db].keys():
-            output_file = os.path.join(FLYWAY_OUTPUT_DIR, '{}.{}.json'.format(command, schema_name))
-            output_file_checks.append('-s "{}"'.format(output_file))
-    
-    command_checks += 'if [[ {} ]];\n'.format('\n\t|| '.join(output_file_checks))
-    command_checks += 'then\n'
-    for output_file_check in output_file_checks:
-        command_checks += '\tif [ {} ];\n\t\tthen cat {}\n\tfi\n'.format(output_file_check, output_file_check.replace('-s ', ''))
-    command_checks += '\texit 1\n'
-    command_checks += 'fi'
-    utils.write_to_file(os.path.join(TEMP_DIR, 'check-{}.sh'.format(command)), command_checks)
-    logger.info("Generated {} checks:\n{}".format(command, command_checks))
-    return command_checks
-    
 
-def main(environment):
+def make_flyway():
     repo_schema_scripts = get_repo_schema_scripts()
     
     logger.info("Validating repository script names")
@@ -283,16 +263,19 @@ def main(environment):
     generate_flyway_filesystem(scripts_to_deploy)
     
     logger.info("Generating Flyway config")
-    generate_flyway_config(scripts_to_deploy, environment)
+    generate_flyway_config(scripts_to_deploy)
     
     logger.info("Generating Flyway migrate/validate commands")
-    generate_flyway_commands(scripts_to_deploy, environment, command='validate')
-    generate_flyway_commands(scripts_to_deploy, environment, command='migrate')
-    
-    #logger.info("Generating Flyway migrate/validate checks")
-    #generate_command_checks(scripts_to_deploy, command='validate')
-    #generate_command_checks(scripts_to_deploy, command='migrate')
+    generate_flyway_commands(scripts_to_deploy, command='validate')
+    generate_flyway_commands(scripts_to_deploy, command='migrate')
 
 
 if __name__ == '__main__':
-    main(ENVIRONMENT)
+    if '--debug' in sys.argv:
+        conn_details = conn_details = {
+            'user': 'ahrelja',
+            'password': 'Iolap1go!',
+            'account': 'kv94459.us-east-2.aws'
+        }
+    
+    make_flyway()
