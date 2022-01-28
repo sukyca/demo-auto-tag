@@ -102,10 +102,11 @@ def execute_validate_commands(commands):
 
 
 def execute_migrate_commands(commands):
+    # TODO: Add deployment start dttm
     for command in commands:
         os.system(command)
         deserialized_command = get_deserialized_command(command)
-        migration_info = get_failed_validation_info(deserialized_command)
+        migration_info = get_failed_migration_info(deserialized_command)
         if migration_info is not None:
             logger.info("flyway {} failed:\n{}".format('migrate', json.dumps(migration_info, indent=2)))
             logger.info("Error Description:\n{}".format(migration_info['Error Description']))
