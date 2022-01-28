@@ -16,6 +16,7 @@ jobs:
       - name: Setup environment variables
         run: |
           echo "DEV_TAG=dev-${{ github.event.ref }}" >> $GITHUB_ENV
+          echo "TST_TAG=tst-${{ github.event.ref }}" >> $GITHUB_ENV
           echo "PROD_TAG=prod-${{ github.event.ref }}" >> $GITHUB_ENV
       
       - name: Dump GitHub context
@@ -23,27 +24,33 @@ jobs:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
       
-      - name: Validate deleted branch
+      - name: Validate Feature branch is merged into Production branch
+        id: production_merge
+        shell: bash
         run: |
-          FEATURE_BRANCH_TAGS="${{ env.DEV_TAG }} ${{ env.PROD_TAG }}"
+          if [[ -z $(git rev-list ${{ env.PROD_TAG }} -n 1) ]];
+          then echo "set-output name=merged::false"
+          else echo "set-output name=merged::true"
+          fi
+      
+      - name: Recreate Feature branch
+        if: ${{ !steps.production_merge.outputs.merged }}
+        run: |
+          LATEST_LOWER_ENV_TAG=""
+          ALL_LOWER_ENV_TAGS="$DEV_TAG $TST_TAG"
 
-          ALL_TAGS_FOUND=true
-          NO_TAGS_FOUND=true
-
-          for tag in $FEATURE_BRANCH_TAGS;
+          for tag in $ALL_LOWER_ENV_TAGS;
           do
-            if [[ -z $(git branch ${{ github.event.ref }} --contains $tag 2> /dev/null) ]];
-            then ALL_TAGS_FOUND=false
-            else NO_TAGS_FOUND=false
+            if [[ -z $(git rev-list $tag -n 1 2> /dev/null) ]];
+            then echo "$tag does not exist"
+            else LATEST_LOWER_ENV_TAG=$tag
             fi
           done
-      
-          if [[ "$ALL_TAGS_FOUND" == true && "$NO_TAGS_FOUND" == false ]];
-            then echo 'Feature branch contains both dev and prod tags; Delete ${{ github.event.ref }} branch'
-          elif [[ "$ALL_TAGS_FOUND" == false && "$NO_TAGS_FOUND" == true ]];
-            then echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.event.ref }} branch'
+
+          if [[ -z $LATEST_LOWER_ENV_TAG ]];
+            then echo 'No tags exist. Feature branch can be safely deleted'
           else
-            echo 'Branch $DEV_TAG was not supposed to be deleted. Delete reverted'
-            git checkout -b ${{ github.event.ref }} $DEV_TAG
+            echo 'Latest tag: $LATEST_LOWER_ENV_TAG. Delete reverted'
+            git checkout -b ${{ github.event.ref }} $LATEST_LOWER_ENV_TAG
             git push origin ${{ github.event.ref }}
           fi
