@@ -96,7 +96,8 @@ def execute_validate_commands(commands):
         if validation_info is not None:
             valid = False
             logger.info("flyway {} failed:\n{}".format('validate', json.dumps(validation_info, indent=2)))
-            logger.info("Error Description:\n{}".format(validation_info['Error Description']))
+            for i, error in enumerate(validation_info['Invalid Migrations']):
+                logger.info("Error {} Description:\n{}".format(i+1, error['Error Description']))
     return valid
 
 
