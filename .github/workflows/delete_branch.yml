@@ -28,7 +28,7 @@ jobs:
         id: production_merge
         shell: bash
         run: |
-          if [[ -z $(git rev-list ${{ env.PROD_TAG }} -n 1) ]];
+          if [[ -z $(git rev-list ${{ env.PROD_TAG }} -n 1 2> /dev/null) ]];
           then echo "set-output name=merged::false"
           else echo "set-output name=merged::true"
           fi
@@ -48,9 +48,9 @@ jobs:
           done
 
           if [[ -z $LATEST_LOWER_ENV_TAG ]];
-            then echo 'No tags exist. Feature branch can be safely deleted'
+            then echo "No tags exist. Feature branch can be safely deleted"
           else
-            echo 'Latest tag: $LATEST_LOWER_ENV_TAG. Delete reverted'
+            echo "Latest tag: $LATEST_LOWER_ENV_TAG. Delete reverted"
             git checkout -b ${{ github.event.ref }} $LATEST_LOWER_ENV_TAG
             git push origin ${{ github.event.ref }}
           fi
