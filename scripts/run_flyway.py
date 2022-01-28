@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 
 from config import get_logger
 from config import TEMP_DIR
@@ -39,7 +40,7 @@ def get_commands(command='validate'):
         return f.readlines()
 
 
-def get_failed_execution_info(deserialized_command):
+def get_failed_validation_info(deserialized_command):
     command_output = deserialized_command.get('command_output')
     if command_output.get('validationSuccessful', False) == False:
         error_info = {
@@ -50,12 +51,31 @@ def get_failed_execution_info(deserialized_command):
             'Invalid Migrations': [
                 {
                     'File Name': os.path.split(invalid_migration['filepath'])[1],
-                    'File Path': invalid_migration['filepath'],
+                    'File Path': os.path.join('ab', command_output.get('database'), deserialized_command.get('schemas'), os.path.split(invalid_migration['filepath'])[1]),
                     'Error Code': invalid_migration['errorDetails'].get('errorCode'),
                     'Error Description': invalid_migration['errorDetails'].get('errorMessage')
                 }
                 for invalid_migration in command_output.get('invalidMigrations')
             ]
+        }
+        if command_output.get('warnings'):
+            error_info.update({'Warnings': command_output.get('warnings')})
+        return error_info
+    return None
+
+
+def get_failed_migration_info(deserialized_command):
+    command_output = deserialized_command.get('command_output')
+    if command_output.get('success', False) == False:
+        file_name = re.search(validate.VERSIONED_DEPLOYED_MIGRATIONS, command_output['error'].get('message')).group()
+        error_info = {
+            'Database': command_output.get('database'),
+            'Schema': command_output.get('schemaName'),
+            'File Name': file_name,
+            'File Path': os.path.join('ab', command_output.get('database'), command_output.get('schemaName'), file_name),
+            'Initial Schema Version': command_output.get('initialSchemaVersion'),
+            'Error Code': command_output['error'].get('errorCode'),
+            'Error Description': command_output['error'].get('message'),
         }
         if command_output.get('warnings'):
             error_info.update({'Warnings': command_output.get('warnings')})
@@ -72,16 +92,23 @@ def execute_validate_commands(commands):
     
     valid = True
     for deserialized_command in deserialized_commands:
-        execution_info = get_failed_execution_info(deserialized_command)
-        if execution_info is not None:
+        validation_info = get_failed_validation_info(deserialized_command)
+        if validation_info is not None:
             valid = False
-            logger.info("flyway {} failed:\n{}".format('validate', json.dumps(execution_info, indent=2)))
+            logger.info("flyway {} failed:\n{}".format('validate', json.dumps(validation_info, indent=2)))
+            logger.info("Error Description:\n{}".format(validation_info['Error Description']))
     return valid
 
 
 def execute_migrate_commands(commands):
     for command in commands:
         os.system(command)
+        deserialized_command = get_deserialized_command(command)
+        migration_info = get_failed_validation_info(deserialized_command)
+        if migration_info is not None:
+            logger.info("flyway {} failed:\n{}".format('migrate', json.dumps(migration_info, indent=2)))
+            logger.info("Error Description:\n{}".format(migration_info['Error Description']))
+            return False
     return True
 
 
