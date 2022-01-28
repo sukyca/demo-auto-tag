@@ -8,10 +8,9 @@ jobs:
   delete_feature_branch:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Development Branch
+      - name: Checkout Repository
         uses: actions/checkout@v2
         with:
-          ref: development
           fetch-depth: 0
       
       - name: Setup environment variables
