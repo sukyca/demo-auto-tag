@@ -6,7 +6,7 @@ on:
     types: [closed]
 
 jobs:
-  close_pull_request:
+  pr-closed:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

@@ -5,7 +5,7 @@ on:
    tags-ignore: '**'
 
 jobs:
-  delete_feature_branch:
+  delete-branch:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository

@@ -7,7 +7,7 @@ on:
     
 
 jobs:
-  open_pull_request:
+  pr-opened-synchronize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -45,7 +45,8 @@ jobs:
             echo "Feature branch HEAD is not = Tagged COMMIT_ID"
             exit 1
           fi
-  run_codebuild:
+  
+  pr-opened-synchronize-run-codebuild:
     name: Run CodeBuild
     runs-on: ubuntu-latest
     needs: open_pull_request

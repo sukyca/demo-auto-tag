@@ -7,7 +7,7 @@ on:
     tags-ignore: '**'
 
 jobs:
-  branch-validation:
+  create-branch:
     runs-on: ubuntu-latest
     steps:     
       - name: Checkout Production
