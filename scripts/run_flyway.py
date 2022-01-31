@@ -109,25 +109,21 @@ def get_flyway_migrations(repo_schema_scripts):
             try:
                 cursor.execute(query)
             except snowflake.connector.errors.ProgrammingError:
-                cursor.close()
-                conn.close()
                 logger.error("Snowflake query '{}' execution failed".format(query))
-                return []
 
-            failed_migrations.extend([
-                {
-                    'version': res[0],
-                    'script': res[1],
-                    'success': res[2]
-                } for res in cursor.fetchall() if res[2] == False
-            ])
-            successful_migrations.extend([
-                {
-                    'version': res[0],
-                    'script': res[1],
-                    'success': res[2]
-                } for res in cursor.fetchall() if res[2] == True
-            ])
+            for res in cursor.fetchall():
+                if res[2] == True:
+                    successful_migrations.append({
+                        'version': res[0],
+                        'script': res[1],
+                        'success': res[2]
+                    })
+                else:            
+                    failed_migrations.append({
+                        'version': res[0],
+                        'script': res[1],
+                        'success': res[2]
+                    })
     
     cursor.close()
     conn.close()
