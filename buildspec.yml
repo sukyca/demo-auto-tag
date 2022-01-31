@@ -1,11 +1,6 @@
 version: 0.2
 env:
   secrets-manager:
-    #HOST: "$SECRET_NAME:host"
-    #PORT: "$SECRET_NAME:port"
-    #DATABASE: "$SECRET_NAME:database"
-    #USER: "$SECRET_NAME:user"
-    #PASSWORD: "$SECRET_NAME:password"
     USER: "development/ab-demo/snowflake-credentials:user"
     PASSWORD: "development/ab-demo/snowflake-credentials:password"
     ACCOUNT: "development/ab-demo/snowflake-credentials:account"
