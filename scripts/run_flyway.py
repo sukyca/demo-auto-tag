@@ -13,7 +13,7 @@ from config import TEMP_DIR
 from make_flyway import get_repo_schema_scripts
 import validate
 
-DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).timestamp())
+DEPLOYMENT_DTTM_UTC = dt.datetime.now(pytz.UTC)
 logger = get_logger()
 
 
@@ -92,8 +92,6 @@ def get_failed_migration_info(deserialized_command):
 
 
 def get_flyway_migrations(repo_schema_scripts):
-    deployment_dttm_utc = dt.datetime.fromtimestamp(int(DEPLOYMENT_DTTM_UTC), pytz.UTC)
-        
     successful_migrations = []
     failed_migrations = []
     
@@ -106,7 +104,7 @@ def get_flyway_migrations(repo_schema_scripts):
                 FROM {}.{}."flyway_schema_history" 
                 WHERE "installed_on" >= '{}'
                 ORDER BY "success" DESC
-            """.format(db, schema, deployment_dttm_utc)
+            """.format(db, schema, DEPLOYMENT_DTTM_UTC)
             
             try:
                 cursor.execute(query)

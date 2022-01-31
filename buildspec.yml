@@ -8,8 +8,7 @@ env:
 phases:
   pre_build:
     commands:
-      - export DEPLOYMENT_DTTM_UTC=$(date +%s)
-      - echo Build started on $DEPLOYMENT_DTTM_UTC
+      - echo Build started on `date -u`
       - virtualenv venv
       - . venv/bin/activate
       - pip install --upgrade pip
