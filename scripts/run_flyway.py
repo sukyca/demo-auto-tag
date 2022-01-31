@@ -91,18 +91,21 @@ def get_failed_migration_info(deserialized_command):
     return None
 
 
-def get_failed_flyway_migrations(repo_schema_scripts):
+def get_flyway_migrations(repo_schema_scripts):
     deployment_dttm_utc = dt.datetime.fromtimestamp(int(DEPLOYMENT_DTTM_UTC), pytz.UTC)
+        
+    successful_migrations = []
+    failed_migrations = []
     
     conn = snowflake.connector.connect(**conn_details)
     cursor = conn.cursor()
-    failed_migrations = []
     
     for db in repo_schema_scripts.keys():
         for schema in repo_schema_scripts[db].keys():
-            query = """SELECT "version", "script" 
+            query = """SELECT "version", "script", "success"
                 FROM {}.{}."flyway_schema_history" 
-                WHERE "installed_on" >= '{}' AND "success"=FALSE
+                WHERE "installed_on" >= '{}'
+                ORDER BY "success" DESC
             """.format(db, schema, deployment_dttm_utc)
             
             try:
@@ -117,11 +120,20 @@ def get_failed_flyway_migrations(repo_schema_scripts):
                 {
                     'version': res[0],
                     'script': res[1],
-                } for res in cursor.fetchall()
+                    'success': res[2]
+                } for res in cursor.fetchall() if res[2] == False
             ])
+            successful_migrations.extend([
+                {
+                    'version': res[0],
+                    'script': res[1],
+                    'success': res[2]
+                } for res in cursor.fetchall() if res[2] == True
+            ])
+    
     cursor.close()
     conn.close()
-    return failed_migrations
+    return successful_migrations, failed_migrations
 
 
 def execute_validate_commands(commands):
@@ -167,8 +179,8 @@ def run_flyway(command_name):
     executed_successfully = execute_commands(command_name, commands)
     if not executed_successfully:
         repo_schema_scripts = get_repo_schema_scripts()
-        failed_migrations = get_failed_flyway_migrations(repo_schema_scripts)
-        #for failed_migration in failed_migrations:
+        successful_migrations, failed_migrations = get_flyway_migrations(repo_schema_scripts)
+        logger.info("Successful migrations:\n{}".format(json.dumps(successful_migrations, indent=2)))
         logger.error("Failed migrations:\n{}".format(json.dumps(failed_migrations, indent=2)))
         exit(1)
 
