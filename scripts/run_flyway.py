@@ -1,14 +1,19 @@
 import os
+import re
 import sys
 import json
-import re
+import pytz
+import logging
 import datetime as dt
+import snowflake.connector
 
 from config import get_logger
+from config import conn_details
 from config import TEMP_DIR
+from make_flyway import get_repo_schema_scripts
 import validate
 
-DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC')
+DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).timestamp())
 logger = get_logger()
 
 
@@ -86,6 +91,39 @@ def get_failed_migration_info(deserialized_command):
     return None
 
 
+def get_failed_flyway_migrations(repo_schema_scripts):
+    deployment_dttm_utc = dt.datetime.fromtimestamp(int(DEPLOYMENT_DTTM_UTC), pytz.UTC)
+    
+    conn = snowflake.connector.connect(**conn_details)
+    cursor = conn.cursor()
+    failed_migrations = []
+    
+    for db in repo_schema_scripts.keys():
+        for schema in repo_schema_scripts[db].keys():
+            query = """SELECT "version", "script" 
+                FROM {}.{}."flyway_schema_history" 
+                WHERE "installed_on" >= '{}' AND "success"=FALSE
+            """.format(db, schema, deployment_dttm_utc)
+            
+            try:
+                cursor.execute(query)
+            except snowflake.connector.errors.ProgrammingError:
+                cursor.close()
+                conn.close()
+                logger.error("Snowflake query '{}' execution failed".format(query))
+                return []
+
+            failed_migrations.extend([
+                {
+                    'version': res[0],
+                    'script': res[1],
+                } for res in cursor.fetchall()
+            ])
+    cursor.close()
+    conn.close()
+    return failed_migrations
+
+
 def execute_validate_commands(commands):
     deserialized_commands = []
     for command in commands:
@@ -100,7 +138,7 @@ def execute_validate_commands(commands):
             valid = False
             logger.info("flyway {} failed:\n{}".format('validate', json.dumps(failed_validation, indent=2)))
             for i, error in enumerate(failed_validation['Invalid Migrations']):
-                logger.info("Error {} Description:\n{}".format(i+1, error['Error Description']))
+                logger.error("Error {} Description:\n{}".format(i+1, error['Error Description']))
     return valid
 
 
@@ -110,8 +148,8 @@ def execute_migrate_commands(commands):
         deserialized_command = get_deserialized_command(command)
         failed_migration = get_failed_migration_info(deserialized_command)
         if failed_migration:
-            logger.info("flyway {} failed:\n{}".format('migrate', json.dumps(failed_migration, indent=2)))
-            logger.info("Error Description:\n{}".format(failed_migration['Error Description']))
+            logger.error("flyway {} failed:\n{}".format('migrate', json.dumps(failed_migration, indent=2)))
+            logger.error("Error Description:\n{}".format(failed_migration['Error Description']))
             return False
     return True
 
@@ -128,6 +166,10 @@ def run_flyway(command_name):
     commands = get_commands(command_name)
     executed_successfully = execute_commands(command_name, commands)
     if not executed_successfully:
+        repo_schema_scripts = get_repo_schema_scripts()
+        failed_migrations = get_failed_flyway_migrations(repo_schema_scripts)
+        #for failed_migration in failed_migrations:
+        logger.error("Failed migrations:\n{}".format(json.dumps(failed_migrations, indent=2)))
         exit(1)
 
 
@@ -136,6 +178,6 @@ if __name__ == '__main__':
     validate.validate_run_flyway_args(sys.argv)
     command = sys.argv[0].replace('--', '')
     
-    logger.info("Deployment UTC dttm: {}".format(dt.datetime.fromtimestamp(int(DEPLOYMENT_DTTM_UTC))))
+    logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
     run_flyway(command)
     

@@ -3,26 +3,24 @@ import sys
 import time
 import json
 import shutil
-import snowflake.connector
+import logging
 import datetime as dt
+import snowflake.connector
 
 import utils
 import validate
 
 from config import get_logger
+from config import conn_details
 from config import REPO_DIR
 from config import TEMP_DIR
 from config import FLYWAY_CONFIG_DIR
 from config import FLYWAY_FILESYSTEM_DIR
 from config import FLYWAY_OUTPUT_DIR
 
+
 logger = get_logger()
 
-conn_details = {
-    'user': os.getenv('USER'),
-    'password': os.getenv('PASSWORD'),
-    'account': os.getenv('ACCOUNT'),
-}
 
 def get_deployed_flyway_scripts(database, schema):
     conn_details.update({
@@ -277,4 +275,6 @@ if __name__ == '__main__':
             'password': 'Iolap1go!',
             'account': 'kv94459.us-east-2.aws',
         }
+    
+    logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
     make_flyway()
