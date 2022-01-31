@@ -136,7 +136,6 @@ if __name__ == '__main__':
     validate.validate_run_flyway_args(sys.argv)
     command = sys.argv[0].replace('--', '')
     
-    logger.info("Deployment UTC dttm: {}".format(DEPLOYMENT_DTTM_UTC))
-    #logger.info("Deployment UTC dttm: {}".format(dt.datetime.fromtimestamp(DEPLOYMENT_DTTM_UTC)))
+    logger.info("Deployment UTC dttm: {}".format(dt.datetime.fromtimestamp(DEPLOYMENT_DTTM_UTC)))
     run_flyway(command)
     
