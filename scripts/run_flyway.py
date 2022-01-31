@@ -2,11 +2,13 @@ import os
 import sys
 import json
 import re
+import datetime as dt
 
 from config import get_logger
 from config import TEMP_DIR
 import validate
 
+DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC')
 logger = get_logger()
 
 
@@ -68,6 +70,7 @@ def get_failed_migration_info(deserialized_command):
     command_output = deserialized_command.get('command_output')
     if command_output.get('success', False) == False:
         file_name = re.search(validate.VERSIONED_DEPLOYED_MIGRATIONS, command_output['error'].get('message')).group()
+        file_name = 'V{}__' + file_name.split('__')[1]
         error_info = {
             'Database': command_output.get('database'),
             'Schema': command_output.get('schemaName'),
@@ -133,6 +136,7 @@ if __name__ == '__main__':
     validate.validate_run_flyway_args(sys.argv)
     command = sys.argv[0].replace('--', '')
     
+    logger.info("Deployment UTC dttm: {}".format(DEPLOYMENT_DTTM_UTC))
+    #logger.info("Deployment UTC dttm: {}".format(dt.datetime.fromtimestamp(DEPLOYMENT_DTTM_UTC)))
     run_flyway(command)
-    logger.info("Deployment UTC dttm: {}".format(os.getenv('DEPLOYMENT_DTTM_UTC')))
     
