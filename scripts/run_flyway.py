@@ -92,24 +92,23 @@ def execute_validate_commands(commands):
     
     valid = True
     for deserialized_command in deserialized_commands:
-        validation_info = get_failed_validation_info(deserialized_command)
-        if validation_info is not None:
+        failed_validation = get_failed_validation_info(deserialized_command)
+        if failed_validation:
             valid = False
-            logger.info("flyway {} failed:\n{}".format('validate', json.dumps(validation_info, indent=2)))
-            for i, error in enumerate(validation_info['Invalid Migrations']):
+            logger.info("flyway {} failed:\n{}".format('validate', json.dumps(failed_validation, indent=2)))
+            for i, error in enumerate(failed_validation['Invalid Migrations']):
                 logger.info("Error {} Description:\n{}".format(i+1, error['Error Description']))
     return valid
 
 
 def execute_migrate_commands(commands):
-    # TODO: Add deployment start dttm
     for command in commands:
         os.system(command)
         deserialized_command = get_deserialized_command(command)
-        migration_info = get_failed_migration_info(deserialized_command)
-        if migration_info is not None:
-            logger.info("flyway {} failed:\n{}".format('migrate', json.dumps(migration_info, indent=2)))
-            logger.info("Error Description:\n{}".format(migration_info['Error Description']))
+        failed_migration = get_failed_migration_info(deserialized_command)
+        if failed_migration:
+            logger.info("flyway {} failed:\n{}".format('migrate', json.dumps(failed_migration, indent=2)))
+            logger.info("Error Description:\n{}".format(failed_migration['Error Description']))
             return False
     return True
 
@@ -135,4 +134,5 @@ if __name__ == '__main__':
     command = sys.argv[0].replace('--', '')
     
     run_flyway(command)
+    logger.info("Deployment UTC dttm: {}".format(os.getenv('DEPLOYMENT_DTTM_UTC')))
     

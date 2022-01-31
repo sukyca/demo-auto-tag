@@ -1,5 +1,7 @@
 version: 0.2
 env:
+  variables:
+    DEPLOYMENT_DTTM_UTC: date +%s
   secrets-manager:
     #HOST: "$SECRET_NAME:host"
     #PORT: "$SECRET_NAME:port"
