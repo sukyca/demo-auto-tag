@@ -1,7 +1,5 @@
 version: 0.2
 env:
-  variables:
-    DEPLOYMENT_DTTM_UTC: $(date +%s)
   secrets-manager:
     #HOST: "$SECRET_NAME:host"
     #PORT: "$SECRET_NAME:port"
@@ -15,7 +13,8 @@ env:
 phases:
   pre_build:
     commands:
-      - echo Build started on `date`
+      - export DEPLOYMENT_DTTM_UTC=date +%s
+      - echo Build started on $DEPLOYMENT_DTTM_UTC
       - virtualenv venv
       - . venv/bin/activate
       - pip install --upgrade pip
@@ -27,7 +26,7 @@ phases:
     commands:
       - cd ./scripts/
       - python make_flyway.py
-      - echo Starting up `flyway validate`...
+      - echo Starting up flyway validate...
       - python run_flyway.py --validate
   post_build:
     commands:
@@ -39,7 +38,7 @@ phases:
       - |
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
-          echo Starting up `flyway migrate`...
+          echo Starting up flyway migrate...
           python run_flyway.py --migrate
         fi
       - echo Build finished on `date`
