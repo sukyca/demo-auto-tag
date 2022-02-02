@@ -36,8 +36,9 @@ jobs:
             then
               echo "Feature branch ${{ github.ref_name }} is invalid. Delete in progress"
               git push origin --delete ${{ github.ref_name }}
+              exit 1
             else
-              echo "Feature branch ${{ github.ref_name }} is recreated using tag: ${{ env.DEV_TAG }}"
+              echo "Feature branch ${{ github.ref_name }} contains tag: ${{ env.DEV_TAG }}. No actions are submitted"
             fi
             
           else
