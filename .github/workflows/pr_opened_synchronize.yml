@@ -1,4 +1,4 @@
-name: Open/Synchronise pull request
+name: Opened/Synchronize pull request
 
 on:
   pull_request:

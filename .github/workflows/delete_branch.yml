@@ -1,4 +1,4 @@
-name: Delete Feature Branch
+name: Delete Branch Validation
 
 on:
  delete:

@@ -1,6 +1,4 @@
-#Check to ensure the latest main brach commit matches the new branches initial commit
-
-name: Feature Branch Validation (1)
+name: Create Branch Validation
 
 on:
   create:

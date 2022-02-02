@@ -1,4 +1,4 @@
-name: Run CodeBuild on push
+name: Push (Run CodeBuild)
 
 on:
   push:
