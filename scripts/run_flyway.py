@@ -169,7 +169,7 @@ def run_flyway(command_name):
         if command_name == 'migrate':
             repo_schema_scripts = get_repo_schema_scripts()
             migrations = get_flyway_migrations(repo_schema_scripts)
-            logger.error("Migrations:\n{}".format(json.dumps(migrations, indent=2)))
+            logger.error("Migrations:\nThe following migrations will be rolled back using the provided Python backout scripts.\n{}".format(json.dumps(migrations, indent=2)))
         exit(1)
 
 
