@@ -19,7 +19,7 @@ from config import FLYWAY_FILESYSTEM_DIR
 from config import FLYWAY_OUTPUT_DIR
 
 
-logger = get_logger()
+logger = get_logger(__file__)
 
 
 def get_deployed_flyway_scripts(database, schema):

@@ -14,7 +14,7 @@ from make_flyway import get_repo_schema_scripts
 import validate
 
 DEPLOYMENT_DTTM_UTC = dt.datetime.now(pytz.UTC)
-logger = get_logger()
+logger = get_logger(__file__)
 
 
 def get_deserialized_command(command):
@@ -92,42 +92,35 @@ def get_failed_migration_info(deserialized_command):
 
 
 def get_flyway_migrations(repo_schema_scripts):
-    successful_migrations = []
-    failed_migrations = []
-    
     conn = snowflake.connector.connect(**conn_details)
     cursor = conn.cursor()
-    
-    for db in repo_schema_scripts.keys():
-        for schema in repo_schema_scripts[db].keys():
-            query = """SELECT "version", "script", "success"
+    query = """SELECT "installed_rank", "version", "script", "success"
                 FROM {}.{}."flyway_schema_history" 
                 WHERE "installed_on" >= '{}'
                 ORDER BY "success" DESC
-            """.format(db, schema, DEPLOYMENT_DTTM_UTC)
-            
+            """
+    migrations = []
+    for db in repo_schema_scripts.keys():
+        for schema in repo_schema_scripts[db].keys():
             try:
-                cursor.execute(query)
+                cursor.execute(query.format(db, schema, DEPLOYMENT_DTTM_UTC))
             except snowflake.connector.errors.ProgrammingError:
                 logger.error("Snowflake query '{}' execution failed".format(query))
 
-            for res in cursor.fetchall():
-                if res[2] == True:
-                    successful_migrations.append({
-                        'version': res[0],
-                        'script': res[1],
-                        'success': res[2]
-                    })
-                else:            
-                    failed_migrations.append({
-                        'version': res[0],
-                        'script': res[1],
-                        'success': res[2]
-                    })
+            migrations.extend([
+                {
+                    'database': db,
+                    'schema': schema,
+                    'installed_rank': res[0],
+                    'version': res[1],
+                    'script': res[2],
+                    'success': res[3]
+                } for res in cursor.fetchall()
+            ])
     
     cursor.close()
     conn.close()
-    return successful_migrations, failed_migrations
+    return migrations
 
 
 def execute_validate_commands(commands):
@@ -172,10 +165,10 @@ def run_flyway(command_name):
     commands = get_commands(command_name)
     executed_successfully = execute_commands(command_name, commands)
     if not executed_successfully:
-        repo_schema_scripts = get_repo_schema_scripts()
-        successful_migrations, failed_migrations = get_flyway_migrations(repo_schema_scripts)
-        logger.info("Successful migrations:\n{}".format(json.dumps(successful_migrations, indent=2)))
-        logger.error("Failed migrations:\n{}".format(json.dumps(failed_migrations, indent=2)))
+        if command_name == 'migrate':
+            repo_schema_scripts = get_repo_schema_scripts()
+            migrations = get_flyway_migrations(repo_schema_scripts)
+            logger.info("Migrations:\n{}".format(json.dumps(migrations, indent=2)))
         exit(1)
 
 
@@ -185,5 +178,7 @@ if __name__ == '__main__':
     command = sys.argv[0].replace('--', '')
     
     logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
+    
+    logger.info("Flyway Deployment started at {}".format(DEPLOYMENT_DTTM_UTC))
     run_flyway(command)
     

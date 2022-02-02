@@ -17,7 +17,7 @@ conn_details = {
     'account': os.getenv('ACCOUNT'),
 }
 
-def get_logger(**kwargs):
+def get_logger(logger_name, **kwargs):
     logging.basicConfig(
         format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
         datefmt='%Y/%m/%d %H:%M:%S',
@@ -26,4 +26,4 @@ def get_logger(**kwargs):
         **kwargs
     )
 
-    return logging.getLogger(os.getenv('ENVIRONMENT', __file__))
+    return logging.getLogger(logger_name)
