@@ -2,6 +2,7 @@ __pycache__/
 scripts/debug.py
 temp/
 .env
+backout_scripts/
 
 regexs.txt
 development_push.json
