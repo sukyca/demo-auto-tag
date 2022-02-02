@@ -164,11 +164,12 @@ def execute_commands(command_name, commands):
 def run_flyway(command_name):
     commands = get_commands(command_name)
     executed_successfully = execute_commands(command_name, commands)
+    
     if not executed_successfully:
         if command_name == 'migrate':
             repo_schema_scripts = get_repo_schema_scripts()
             migrations = get_flyway_migrations(repo_schema_scripts)
-            logger.info("Migrations:\n{}".format(json.dumps(migrations, indent=2)))
+            logger.error("Migrations:\n{}".format(json.dumps(migrations, indent=2)))
         exit(1)
 
 
