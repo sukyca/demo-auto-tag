@@ -1,5 +1,3 @@
 __pycache__/
-scripts/debug.py
 temp/
 .env
-backout_scripts/

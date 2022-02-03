@@ -19,9 +19,9 @@ phases:
   build:
     commands:
       - cd ./scripts/
-      - python make_flyway.py
+      - python scripts.py --make
       - echo Starting up flyway validate...
-      - python run_flyway.py --validate
+      - python scripts.py --validate
   post_build:
     commands:
       - echo Entering post-build phase...
@@ -33,6 +33,6 @@ phases:
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
           echo Starting up flyway migrate...
-          python run_flyway.py --migrate
+          python scripts.py --migrate
         fi
       - echo Build finished on `date`

@@ -11,11 +11,6 @@ FLYWAY_CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
 FLYWAY_FILESYSTEM_DIR = os.path.join(TEMP_DIR, 'sql')
 FLYWAY_OUTPUT_DIR = os.path.join(TEMP_DIR, 'output')
 
-conn_details = {
-    'user': os.getenv('USER'),
-    'password': os.getenv('PASSWORD'),
-    'account': os.getenv('ACCOUNT'),
-}
 
 def get_logger(logger_name, **kwargs):
     logging.basicConfig(
