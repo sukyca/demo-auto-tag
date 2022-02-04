@@ -39,7 +39,7 @@ phases:
         then
           echo Starting up flyway migrate...
           python run_flyway.py --migrate
-          aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date +%Y%m%d)/$(date +%Y%m%d%H%M%S)_folderCommit
+          aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date +%Y%m%d)/$(date +%Y%m%d%H%M%S)_$GITHUB_SHA
         fi
       - ls
       - echo Build finished on `date`
