@@ -28,7 +28,7 @@ phases:
       - cd ..
       - ls
       - zip -r artifacts.zip ab scripts buildspec.yml temp
-      - aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date +%Y%m%d)/$(date +%Y%m%d%H%M%S)_$GITHUB_SHA
+      - aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date -u +%Y%m%d)/$(date -u +%Y%m%d%H%M%S)_$GITHUB_SHA.zip
       - echo Entering post-build phase...
       - |
         if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
