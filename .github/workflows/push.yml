@@ -55,7 +55,7 @@ jobs:
           fi
         done
         
-        if [[ -z $LATEST_LOWER_ENV_TAG && ${{ github.base_ref }} == production ]];
+        if [[ -z $LATEST_LOWER_ENV_TAG ]] && [[ ${{ github.base_ref }} == production ]];
           then 
             echo "No tags exist. Reseting to previous commit."
             git reset --hard origin/production
