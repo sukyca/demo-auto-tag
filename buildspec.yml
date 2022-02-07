@@ -46,9 +46,9 @@ phases:
       - echo Build finished on `date`
 artifacts:
   files:
-    - 'ab/*'
-    - 'scripts/*'
-    - 'temp/*'
+    - 'ab/**/*'
+    - 'scripts/**/*'
+    - 'temp/**/*'
     - 'buildspec.yml'
   name: artifact-"$DEPLOYMENT_DT_UTC"
   s3-prefix: commitid
