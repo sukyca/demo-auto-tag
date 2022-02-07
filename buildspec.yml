@@ -20,14 +20,11 @@ phases:
       - wget -q https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.33/slf4j-simple-1.7.33.jar -P ./flyway-8.4.1/lib/
   build:
     commands:
-      - cd ./scripts/
-      - python make_flyway.py
+      - python ./scripts/flyway_scripts/make_flyway.py
       - echo Starting up flyway validate...
-      - python run_flyway.py --validate
+      - python ./scripts/flyway_scripts/run_flyway.py --validate
   post_build:
     commands:
-      - cd ..
-      - ls
       - zip -r artifacts.zip ab scripts buildspec.yml temp
       - aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
       - echo Entering post-build phase...
@@ -39,16 +36,15 @@ phases:
         if [ "$GITHUB_EVENT_NAME" = "push" ]
         then
           echo Starting up flyway migrate...
-          python run_flyway.py --migrate
+          python ./scripts/flyway_scripts/run_flyway.py --migrate
           aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
         fi
-      - ls
-      - echo Build finished on `date`
-artifacts:
-  files:
-    - 'ab/**/*'
-    - 'scripts/**/*'
-    - 'temp/**/*'
-    - 'buildspec.yml'
-  name: artifact-"$DEPLOYMENT_DT_UTC"
-  s3-prefix: commitid
+      - echo Build finished on $(date -u)
+# artifacts:
+#   files:
+#     - 'ab/**/*'
+#     - 'scripts/**/*'
+#     - 'temp/**/*'
+#     - 'buildspec.yml'
+#   name: artifact-"$DEPLOYMENT_DT_UTC"
+#   s3-prefix: commitid
