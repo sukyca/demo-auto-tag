@@ -14,6 +14,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.event.ref }}
       
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
@@ -21,9 +22,42 @@ jobs:
         aws-region: us-east-1
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      
+    - name: Setup environment variables
+      run: |
+        echo "DEV_TAG=dev-${{ github.event.ref }}" >> $GITHUB_ENV
+        echo "TST_TAG=tst-${{ github.event.ref }}" >> $GITHUB_ENV
+        echo "PROD_TAG=prod-${{ github.event.ref }}" >> $GITHUB_ENV
         
     - name: Run CodeBuild
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
         project-name: CodeBuildProject-8nM90pLTAs2v
         buildspec-override: ./buildspec.yml
+        
+    - name:  CodeBuild fail
+      if: ${{ failure() }}
+      run: |
+        LATEST_LOWER_ENV_TAG=""
+        ALL_LOWER_ENV_TAGS="$DEV_TAG"
+        
+        for tag in $ALL_LOWER_ENV_TAGS;
+        do
+          if [[ -z $(git rev-list $tag -n 1 2> /dev/null) ]];
+          then echo "$tag does not exist"
+          else LATEST_LOWER_ENV_TAG=$tag
+          fi
+        done
+        
+        if [[ -z $LATEST_LOWER_ENV_TAG && ${{ github.base_ref }} == 'production' ]];
+          then 
+            echo "No tags exist. Reseting to previous commit."
+            git reset --hard origin/production
+            git push -f origin ${{ github.event.ref }}
+        else
+          echo "Latest tag: $LATEST_LOWER_ENV_TAG."
+          git reset --hard $LATEST_LOWER_ENV_TAG
+          git push -f origin ${{ github.event.ref }}
+        fi
+      
+      
