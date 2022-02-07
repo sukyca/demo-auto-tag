@@ -1,4 +1,6 @@
 import os
+import sys
+import logging
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 ALLOWED_SQL_SCRIPTS = [
@@ -14,3 +16,15 @@ def get_sql_script(sql_script_name):
 
     with open(os.path.join(TEMPLATES_DIR, sql_script_name + '.sql'), 'r') as f:
         return f.read()
+
+
+def get_logger(logger_name, **kwargs):
+    logging.basicConfig(
+        format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
+        datefmt='%Y/%m/%d %H:%M:%S',
+        level=logging.INFO,
+        stream=sys.stdout,
+        **kwargs
+    )
+
+    return logging.getLogger(logger_name)

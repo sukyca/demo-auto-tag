@@ -5,8 +5,8 @@ import shutil
 import datetime as dt
 
 import config
-from . import utils
-from . import validate
+import utils
+import validate
 from snowflake_connection import execute_query
 
 
@@ -44,13 +44,23 @@ def get_repo_schema_scripts():
               a list of files in the repository schema level
     """
     repo_schema_scripts = {}
+    repo_backout_scripts = {}
     for db in os.listdir(config.REPO_DIR):
         repo_schema_scripts[db] = {}
+        repo_backout_scripts[db] = {}
         for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
             repo_schema_scripts[db][schema] = []
-            for item in os.listdir(os.path.join(config.REPO_DIR, db, schema)):
-                repo_schema_scripts[db][schema].append(item) # file_name = V{}__TABLE_NAME.sql
-    return repo_schema_scripts
+            repo_backout_scripts[db][schema] = {}
+            for file_name in os.listdir(os.path.join(config.REPO_DIR, db, schema)):
+                if file_name.endswith('.sql'):
+                    repo_schema_scripts[db][schema].append(file_name) # file_name = V{}__TABLE_NAME.sql
+                elif file_name.endswith('.py'):
+                    repo_backout_scripts[db][schema].update(
+                        {
+                            file_name.replace('backout', 'V').replace('.py', 'sql'): file_name
+                        }
+                    ) # file_name = backout{}__TABLE_NAME.py
+    return repo_schema_scripts, repo_backout_scripts
 
 
 def get_db_schema_scripts(repo_schema_scripts):
@@ -228,7 +238,7 @@ def generate_flyway_commands(scripts_to_deploy, command):
 
 
 def make_flyway():
-    repo_schema_scripts = get_repo_schema_scripts()
+    repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
     
     logger.info("Validating repository script names")
     validate.validate_repo_scripts(repo_schema_scripts)
@@ -236,6 +246,10 @@ def make_flyway():
     
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    
+    logger.info("Validating backout scripts exist")
+    validate.validate_backout_scripts(scripts_to_deploy, repo_backout_scripts)
+    logger.info("Validation completed successfully")
     
     logger.info("Generating Flyway filesystem")
     generate_flyway_filesystem(scripts_to_deploy)
@@ -246,3 +260,7 @@ def make_flyway():
     logger.info("Generating Flyway migrate/validate commands")
     generate_flyway_commands(scripts_to_deploy, command='validate')
     generate_flyway_commands(scripts_to_deploy, command='migrate')
+
+
+if __name__ == '__main__':
+    make_flyway()

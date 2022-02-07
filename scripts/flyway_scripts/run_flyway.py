@@ -1,15 +1,19 @@
 import os
 import re
+import sys
 import json
+import pytz
+import argparse
+import datetime as dt
 
 import config
-from . import validate
-from .make_flyway import get_repo_schema_scripts
+import validate
+from make_flyway import get_repo_schema_scripts
 from snowflake_connection import execute_query
 
 
 logger = config.get_logger(__file__)
-
+DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC')
 
 def get_deserialized_command(command):
     _command = command.split(" -")
@@ -49,16 +53,20 @@ def get_failed_validation_info(deserialized_command):
             'Schema': deserialized_command.get('schemas'),
             'Error Code': command_output['errorDetails'].get('errorCode'),
             'Error Description': command_output['errorDetails'].get('errorMessage'),
-            'Invalid Migrations': [
-                {
-                    'File Name': os.path.split(invalid_migration['filepath'])[1],
-                    'File Path': os.path.join('ab', command_output.get('database'), deserialized_command.get('schemas'), os.path.split(invalid_migration['filepath'])[1]),
-                    'Error Code': invalid_migration['errorDetails'].get('errorCode'),
-                    'Error Description': invalid_migration['errorDetails'].get('errorMessage')
-                }
-                for invalid_migration in command_output.get('invalidMigrations')
-            ]
+            'Invalid Migrations': []
         }
+        
+        for invalid_migration in command_output.get('invalidMigrations'):
+            versioned_file_name = os.path.split(invalid_migration['filepath'])[1]
+            default_file_name = versioned_file_name[0] + '{}__' + versioned_file_name.split('__')[1]
+            error_info['Invalid Migrations'].append({
+                'Versioned File Name': versioned_file_name,
+                'Repository File Name': default_file_name,
+                'File Path': os.path.join(command_output.get('database'), deserialized_command.get('schemas'), default_file_name),
+                'Error Code': invalid_migration['errorDetails'].get('errorCode'),
+                'Error Description': invalid_migration['errorDetails'].get('errorMessage')
+            })
+        
         if command_output.get('warnings'):
             error_info.update({'Warnings': command_output.get('warnings')})
         return error_info
@@ -85,7 +93,11 @@ def get_failed_migration_info(deserialized_command):
     return None
 
 
-def get_flyway_migrations(repo_schema_scripts, deployment_dttm):
+def get_flyway_migrations(repo_schema_scripts):
+    if DEPLOYMENT_DTTM_UTC is None:
+        raise ValueError("Deployment DTTM is not set")
+    
+    deployment_dttm_utc = dt.datetime.fromtimestamp(DEPLOYMENT_DTTM_UTC, pytz.UTC)
     query = """SELECT "installed_rank", "version", "script", "success"
                 FROM {}.{}."flyway_schema_history" 
                 WHERE "installed_on" >= '{}'
@@ -94,7 +106,7 @@ def get_flyway_migrations(repo_schema_scripts, deployment_dttm):
     migrations = []
     for db in repo_schema_scripts.keys():
         for schema in repo_schema_scripts[db].keys():
-            results = execute_query(query.format(db, schema, deployment_dttm))
+            results = execute_query(query.format(db, schema, deployment_dttm_utc))
             migrations.extend([
                 {
                     'database': db,
@@ -138,7 +150,7 @@ def execute_migrate_commands(commands):
     return True
 
 
-def run_flyway(command_name, deployment_dttm):
+def run_flyway(command_name):
     if command_name == 'validate':
         commands = get_commands('validate')
         executed_successfully = execute_validate_commands(commands)
@@ -149,7 +161,19 @@ def run_flyway(command_name, deployment_dttm):
         commands = get_commands('migrate')
         executed_successfully = execute_migrate_commands(commands)
         if not executed_successfully:
-            repo_schema_scripts = get_repo_schema_scripts()
-            migrations = get_flyway_migrations(repo_schema_scripts, deployment_dttm)
+            repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
+            migrations = get_flyway_migrations(repo_schema_scripts)
             logger.error("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
             exit(1)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Run flyway commands')
+    parser.add_argument('--validate', default=False, action='store_true', help='Run flyway --validate')
+    parser.add_argument('--migrate', default=False, action='store_true', help='Run flyway --migrate')
+    args = vars(parser.parse_args())
+    #print(args)
+    for command_name, execute in args.items():
+        if execute:
+            run_flyway(command_name)
+    
