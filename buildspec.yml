@@ -8,8 +8,9 @@ env:
 phases:
   pre_build:
     commands:
-      - export DEPLOYMENT_DTTM_UTC=$(date +%s)
-      - echo Build started on $DEPLOYMENT_DTTM_UTC
+      - export DEPLOYMENT_DTTM_UTC=$(date -u +%Y%m%d%H%M%S)
+      - export DEPLOYMENT_DT_UTC=$(date -u +%Y%m%d)
+      - echo Build started on $(date -u)
       - virtualenv venv
       - . venv/bin/activate
       - pip install --upgrade pip
@@ -28,7 +29,7 @@ phases:
       - cd ..
       - ls
       - zip -r artifacts.zip ab scripts buildspec.yml temp
-      - aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date -u +%Y%m%d)/$(date -u +%Y%m%d%H%M%S)_$GITHUB_SHA.zip
+      - aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
       - echo Entering post-build phase...
       - |
         if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
@@ -39,15 +40,15 @@ phases:
         then
           echo Starting up flyway migrate...
           python run_flyway.py --migrate
-          aws s3 cp artifacts.zip s3://$ARTIFACT_BUCKET/$(date -u +%Y%m%d)/$(date -u +%Y%m%d%H%M%S)_$GITHUB_SHA.zip
+          aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
         fi
       - ls
       - echo Build finished on `date`
 artifacts:
   files:
-    - 'ab/**/*'
+    - 'ab/*'
     - 'scripts/*'
-    - 'buildspec.yml'
     - 'temp/*'
-  name: artifact-$(date +%Y-%m-%d) 
+    - 'buildspec.yml'
+  name: artifact-"$DEPLOYMENT_DT_UTC"
   s3-prefix: commitid
