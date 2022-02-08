@@ -2,3 +2,8 @@ __pycache__/
 temp/
 .env
 .vscode/
+
+scripts/backout_scripts/
+scripts/tests/
+scripts/setup.py
+

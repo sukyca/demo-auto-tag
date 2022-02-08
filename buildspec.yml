@@ -14,8 +14,9 @@ phases:
       - virtualenv venv
       - . venv/bin/activate
       - pip install --upgrade pip
-      - pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v2.6.2/tested_requirements/requirements_39.reqs
-      - pip install snowflake-connector-python==2.6.2
+      #- pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v2.6.2/tested_requirements/requirements_39.reqs
+      #- pip install snowflake-connector-python==2.6.2
+      - pip install ./scripts/dist/backout_functions_iolap-0.0.1-py3-none-any.whl
       - wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.4.1/flyway-commandline-8.4.1-linux-x64.tar.gz | tar xvz 1> /dev/null && ln -s `pwd`/flyway-8.4.1/flyway /usr/local/bin 
       - wget -q https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.33/slf4j-simple-1.7.33.jar -P ./flyway-8.4.1/lib/
   build:
