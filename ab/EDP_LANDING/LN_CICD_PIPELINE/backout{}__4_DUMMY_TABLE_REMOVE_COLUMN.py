@@ -12,4 +12,3 @@ backout_functions.undo_drop_column(
     table_name=table_name,
     column_name=column_name
 )
-
