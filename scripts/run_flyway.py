@@ -173,6 +173,7 @@ def run_flyway(command_name):
                 db = migration['database']
                 schema = migration['schema']
                 query = 'DELETE FROM {}.{}."flyway_schema_history" WHERE "installed_rank"={}'
+                logger.info("Ran `{}`".format(query))
                 execute_query(query.format(db, schema, migration['installed_rank']), {'database': db, 'schema': schema})
                 
                 rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
