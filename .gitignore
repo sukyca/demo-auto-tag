@@ -3,7 +3,5 @@ temp/
 .env
 .vscode/
 
-scripts/backout_scripts/
-scripts/tests/
-scripts/setup.py
+backout/
 

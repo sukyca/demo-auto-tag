@@ -1,1 +1,0 @@
-UNDROP TABLE {database}.{schema}.{table_name};
