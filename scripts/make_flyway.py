@@ -19,7 +19,7 @@ def get_deployed_flyway_scripts(database, schema):
         'schema': schema
     }
     query = 'SELECT * FROM "flyway_schema_history"'
-    results = execute_query(conn_update, query)
+    results = execute_query(query, conn_update)
     script_names = [res[4] for res in results]
     return script_names
 

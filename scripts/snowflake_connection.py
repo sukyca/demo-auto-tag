@@ -24,7 +24,7 @@ def get_connection(conn_update=None):
     return snowflake.connector.connect(**conn_details)
 
 
-def execute_query(conn_update, query):
+def execute_query(query, conn_update):
     connection = get_connection(conn_update)
     cursor = connection.cursor()
     
