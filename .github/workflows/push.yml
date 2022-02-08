@@ -38,7 +38,7 @@ jobs:
     - name: Run CodeBuild
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
-        project-name: CodeBuildProject-8nM90pLTAs2v
+        project-name: CodeBuildProject-0HmCLmrCTbsZ
         buildspec-override: ./buildspec.yml
         
     - name:  CodeBuild fail
