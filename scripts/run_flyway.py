@@ -178,7 +178,7 @@ def run_flyway(command_name):
                 rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
                 rollback_commands.append(rollback_command)
             utils.write_to_file(os.path.join(config.TEMP_DIR, 'rollback.sh'), rollback_commands[::-1])
-            logger.error("Resolved backout commands:\n{}".format(json.dumps(rollback_commands, indent=2)))
+            logger.error("Resolved backout commands:\n{}".format(json.dumps(rollback_commands[::-1], indent=2)))
             exit(1)
 
 
