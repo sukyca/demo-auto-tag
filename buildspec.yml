@@ -38,7 +38,7 @@ phases:
         then
           echo Starting up flyway migrate...
           python ./scripts/run_flyway.py --migrate
-          if [ $? = 0 ]
+          if [ $? = 1 ]
             then sh ./rollback.sh
           fi
           aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
