@@ -6,8 +6,9 @@ table_name = 'DUMMY_TABLE',
 column_name = 'TEST_COLUMN'
 
 
-backout_functions.undo_drop_table(
+backout_functions.undo_drop_column(
     database=database,
     schema=schema,
-    table_name=table_name
+    table_name=table_name,
+    column_name=column_name
 )

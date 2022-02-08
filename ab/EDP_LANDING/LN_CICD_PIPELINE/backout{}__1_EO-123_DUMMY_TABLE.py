@@ -6,7 +6,7 @@ table_name = 'DUMMY_TABLE',
 column_name = 'TEST_COLUMN'
 
 
-backout_functions.undo_drop_table(
+backout_functions.undo_create_table(
     database=database,
     schema=schema,
     table_name=table_name

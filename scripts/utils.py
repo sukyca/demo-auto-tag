@@ -1,9 +1,25 @@
+import sys
+import logging
+
+
+def get_logger(logger_name, **kwargs):
+    logging.basicConfig(
+        format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
+        datefmt='%Y/%m/%d %H:%M:%S',
+        level=logging.INFO,
+        stream=sys.stdout,
+        **kwargs
+    )
+
+    return logging.getLogger(logger_name)
+
 
 def clean_script_name(script_name):
     if script_name == '<< Flyway Baseline >>':
         return None
     else:
         return script_name.split('__')[1]
+
 
 def clean_schema_scripts(schema_scripts):
     clean_schema_names = {}
@@ -16,7 +32,8 @@ def clean_schema_scripts(schema_scripts):
                     script_name = clean_script_name(script_name)
                 clean_schema_names[db][schema_name].add(script_name)
     return clean_schema_names
-    
+
+
 def write_to_file(path, content):
     if isinstance(content, list):
         content = '\n'.join(content)

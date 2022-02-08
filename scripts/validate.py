@@ -34,16 +34,16 @@ def validate_repo_scripts(repo_schema_scripts):
                     exit(1)
 
 
-def validate_backout_scripts(scripts_to_deploy, repo_backout_scripts):
-    for db in scripts_to_deploy.keys():
-        for schema_name in scripts_to_deploy[db].keys():
-            for versioned_file_name in scripts_to_deploy[db][schema_name]:
+def validate_backout_scripts(new_scripts, repo_backout_scripts):
+    for db in new_scripts.keys():
+        for schema_name in new_scripts[db].keys():
+            for versioned_file_name in new_scripts[db][schema_name]:
                 default_file_name = versioned_file_name[0] + '{}__' + utils.clean_script_name(versioned_file_name)
                 
                 if default_file_name not in repo_backout_scripts[db][schema_name].keys():
                     backout_file_name = 'backout{}__' + utils.clean_script_name(versioned_file_name).replace('.sql', '.py')
                     print(json.dumps(repo_backout_scripts, indent=4))
-                    logger.error("MissingBackoutScript: Script '{}' is missing its backout python script."
+                    logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
                         "Please create a python backout script named '{}'".format(
                             os.path.join(db, schema_name, default_file_name),
                             os.path.join(db, schema_name, backout_file_name),

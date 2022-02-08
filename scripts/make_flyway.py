@@ -4,13 +4,13 @@ import json
 import shutil
 import datetime as dt
 
-import config
 import utils
+import config
 import validate
 from snowflake_connection import execute_query
 
 
-logger = config.get_logger(__file__)
+logger = utils.get_logger(__file__)
 
 
 def get_deployed_flyway_scripts(database, schema):
@@ -57,7 +57,7 @@ def get_repo_schema_scripts():
                 elif file_name.endswith('.py'):
                     repo_backout_scripts[db][schema].update(
                         {
-                            file_name.replace('backout', 'V').replace('.py', 'sql'): file_name
+                            file_name.replace('backout', 'V').replace('.py', '.sql'): file_name
                         }
                     ) # file_name = backout{}__TABLE_NAME.py
     return repo_schema_scripts, repo_backout_scripts
@@ -136,7 +136,7 @@ def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
             scripts_to_deploy[db][schema_name] = _get_sorted_files(deployed + to_deploy)
     
     logger.info("Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
-    return scripts_to_deploy
+    return scripts_to_deploy, new_scripts
 
 
 def generate_flyway_filesystem(scripts_to_deploy):
@@ -245,10 +245,10 @@ def make_flyway():
     logger.info("Validation completed successfully")
     
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
-    scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    scripts_to_deploy, new_scripts = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
     logger.info("Validating backout scripts exist")
-    validate.validate_backout_scripts(scripts_to_deploy, repo_backout_scripts)
+    validate.validate_backout_scripts(new_scripts, repo_backout_scripts)
     logger.info("Validation completed successfully")
     
     logger.info("Generating Flyway filesystem")
