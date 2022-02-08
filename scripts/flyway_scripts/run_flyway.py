@@ -14,6 +14,10 @@ from snowflake_connection import execute_query
 
 logger = config.get_logger(__file__)
 DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC')
+if DEPLOYMENT_DTTM_UTC is None:
+    raise ValueError("Deployment DTTM is not set")
+    
+deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
 
 def get_deserialized_command(command):
     _command = command.split(" -")
@@ -94,15 +98,13 @@ def get_failed_migration_info(deserialized_command):
 
 
 def get_flyway_migrations(repo_schema_scripts):
-    if DEPLOYMENT_DTTM_UTC is None:
-        raise ValueError("Deployment DTTM is not set")
-    
-    deployment_dttm_utc = dt.datetime.fromtimestamp(DEPLOYMENT_DTTM_UTC, pytz.UTC)
-    query = """SELECT "installed_rank", "version", "script", "success"
-                FROM {}.{}."flyway_schema_history" 
-                WHERE "installed_on" >= '{}'
-                ORDER BY "success" DESC
-            """
+    query = """
+    SELECT 
+        "installed_rank", "version", "script", "success"
+    FROM {}.{}."flyway_schema_history" 
+    WHERE "installed_on" >= '{}'
+    ORDER BY "success" DESC
+    """
     migrations = []
     for db in repo_schema_scripts.keys():
         for schema in repo_schema_scripts[db].keys():
