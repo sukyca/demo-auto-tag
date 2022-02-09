@@ -98,7 +98,7 @@ def get_failed_migration_info(deserialized_command):
     return None
 
 
-def get_flyway_migrations(repo_schema_scripts):
+def get_flyway_schema_migrations(repo_schema_scripts):
     query = """
     SELECT 
         "installed_rank", "version", "script", "success"
@@ -167,7 +167,7 @@ def run_flyway(command_name):
         if not executed_successfully:
             rollback_commands = []
             repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
-            migrations = get_flyway_migrations(repo_schema_scripts)
+            migrations = get_flyway_schema_migrations(repo_schema_scripts)
             logger.error("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
             for migration in migrations:
                 db = migration['database']

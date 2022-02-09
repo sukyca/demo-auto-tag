@@ -35,7 +35,7 @@ jobs:
         project-name: CodeBuildProject-0HmCLmrCTbsZ
         buildspec-override: ./buildspec.yml
         
-    - name:  CodeBuild fail
+    - name: CodeBuild fail
       if: ${{ failure() }}
       run: |
           echo "Reseting ${{ github.ref_name }} to previous commit."
