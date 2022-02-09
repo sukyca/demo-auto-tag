@@ -49,6 +49,6 @@ jobs:
         then
           echo "Reseting ${{ github.ref_name }} to previous commit."
           git checkout ${{ github.ref_name }}
-          git reset --hard HEAD@{1}
+          git reset --hard HEAD~1
           git push -f origin ${{ github.ref_name }}
         fi
