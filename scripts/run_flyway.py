@@ -125,9 +125,11 @@ def get_flyway_schema_migrations(repo_schema_scripts):
     return migrations
 
 
-def execute_validate_commands(commands):
+def execute_validate_commands(commands, hide_command_output=False):
     deserialized_commands = []
     for command in commands:
+        if hide_command_output:
+            command += ' 1> /dev/null'
         os.system(command)
         deserialized_command = get_deserialized_command(command)
         deserialized_commands.append(deserialized_command)
@@ -144,8 +146,10 @@ def execute_validate_commands(commands):
     return valid
 
 
-def execute_migrate_commands(commands):
+def execute_migrate_commands(commands, hide_command_output=False):
     for command in commands:
+        if hide_command_output:
+            command += ' 1> /dev/null'
         os.system(command)
         deserialized_command = get_deserialized_command(command)
         failed_migration = get_failed_migration_info(deserialized_command)
@@ -160,13 +164,13 @@ def execute_migrate_commands(commands):
 def run_flyway(command_name):
     if command_name == 'validate':
         commands = get_commands('validate')
-        executed_successfully = execute_validate_commands(commands)
+        executed_successfully = execute_validate_commands(commands, hide_command_output=True)
         if not executed_successfully:
             exit(1)
     
     elif command_name == 'migrate':
         commands = get_commands('migrate')
-        executed_successfully = execute_migrate_commands(commands)
+        executed_successfully = execute_migrate_commands(commands, hide_command_output=True)
         if not executed_successfully:
             rollback_commands = []
             repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
