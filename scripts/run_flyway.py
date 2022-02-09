@@ -57,10 +57,11 @@ def get_failed_validation_info(deserialized_command):
             'Invalid Migrations': []
         }
         
-        for invalid_migration in command_output.get('invalidMigrations'):
+        for i, invalid_migration in enumerate(command_output.get('invalidMigrations')):
             versioned_file_name = os.path.split(invalid_migration['filepath'])[1]
             default_file_name = versioned_file_name[0] + '{}__' + versioned_file_name.split('__')[1]
             error_info['Invalid Migrations'].append({
+                'Error #': i+1,
                 'Versioned File Name': versioned_file_name,
                 'Repository File Name': default_file_name,
                 'File Path': os.path.join(command_output.get('database'), deserialized_command.get('schemas'), default_file_name),
@@ -136,9 +137,10 @@ def execute_validate_commands(commands):
         failed_validation = get_failed_validation_info(deserialized_command)
         if failed_validation:
             valid = False
-            logger.info("flyway {} failed:\n{}".format('validate', json.dumps(failed_validation, indent=2)))
-            for i, error in enumerate(failed_validation['Invalid Migrations']):
-                logger.error("Error {} Description:\n{}".format(i+1, error['Error Description']))
+            invalid_migrations = failed_validation.pop('Invalid Migrations')
+            logger.info("`flyway {}` failed:\n{}".format('validate', json.dumps(failed_validation, indent=2)))
+            for i, error in enumerate(invalid_migrations):
+                logger.error("Error #{} Description:\n{}".format(i+1, error['Error Description']))
     return valid
 
 
@@ -148,8 +150,9 @@ def execute_migrate_commands(commands):
         deserialized_command = get_deserialized_command(command)
         failed_migration = get_failed_migration_info(deserialized_command)
         if failed_migration:
-            logger.error("flyway {} failed:\n{}".format('migrate', json.dumps(failed_migration, indent=2)))
-            logger.error("Error Description:\n{}".format(failed_migration['Error Description']))
+            error_description = failed_migration.pop('Error Description')
+            logger.error("`flyway {}` failed:\n{}".format('migrate', json.dumps(failed_migration, indent=2)))
+            logger.info("Error Description:\n{}".format(error_description))
             return False
     return True
 
@@ -168,7 +171,7 @@ def run_flyway(command_name):
             rollback_commands = []
             repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
             migrations = get_flyway_schema_migrations(repo_schema_scripts)
-            logger.error("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
+            logger.info("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
             for migration in migrations:
                 db = migration['database']
                 schema = migration['schema']
@@ -180,7 +183,7 @@ def run_flyway(command_name):
                 rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
                 rollback_commands.append(rollback_command)
             utils.write_to_file(os.path.join(config.TEMP_DIR, 'rollback.sh'), rollback_commands[::-1])
-            logger.error("Resolved backout commands:\n{}".format(json.dumps(rollback_commands[::-1], indent=2)))
+            logger.debug("Resolved backout commands:\n{}".format(json.dumps(rollback_commands[::-1], indent=2)))
             exit(1)
 
 
