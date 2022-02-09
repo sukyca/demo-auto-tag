@@ -6,7 +6,7 @@ on:
       - production
       - development
 jobs:
-  push-run-codebuild:
+  run-codebuild-on-push:
     name: run-codebuild-on-push
     runs-on: ubuntu-latest
     steps:

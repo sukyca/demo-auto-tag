@@ -8,6 +8,7 @@ on:
 
 jobs:
   pr-opened-synchronize:
+    name: pr-opened-synchronize
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -46,8 +47,8 @@ jobs:
             exit 1
           fi
   
-  pr-opened-synchronize-run-codebuild:
-    name: Run CodeBuild
+  run-codebuild-on-pr-opened:
+    name: run-codebuild-on-pr-opened
     runs-on: ubuntu-latest
     needs: pr-opened-synchronize
     steps:

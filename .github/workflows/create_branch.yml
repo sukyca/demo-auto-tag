@@ -6,6 +6,7 @@ on:
 
 jobs:
   create-branch:
+    name: create-branch
     runs-on: ubuntu-latest
     steps:     
       - name: Checkout Production
