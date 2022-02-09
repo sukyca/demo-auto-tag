@@ -7,7 +7,7 @@ on:
       - development
 jobs:
   push-run-codebuild:
-    name: CodeBuild
+    name: run-codebuild-on-push
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
