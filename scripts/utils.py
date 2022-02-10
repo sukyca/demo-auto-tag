@@ -4,8 +4,9 @@ import logging
 
 def get_logger(logger_name, **kwargs):
     logging.basicConfig(
-        format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
-        datefmt='%Y/%m/%d %H:%M:%S',
+        format='[%(levelname)s] %(name)s - %(message)s',
+        #format='[%(levelname)s] %(asctime)s %(name)s - %(message)s',
+        #datefmt='%Y/%m/%d %H:%M:%S',
         level=logging.INFO,
         stream=sys.stdout,
         **kwargs
