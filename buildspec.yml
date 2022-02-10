@@ -22,8 +22,12 @@ phases:
   build:
     commands:
       - python ./scripts/make_flyway.py
-      - echo Starting up flyway validate...
-      - python ./scripts/run_flyway.py --validate
+      - |
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ]
+        then
+          echo Starting up flyway validate...
+          python ./scripts/run_flyway.py --validate
+        fi
       
   post_build:
     commands:
