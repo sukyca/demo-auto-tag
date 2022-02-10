@@ -26,8 +26,8 @@ phases:
       - python ./scripts/run_flyway.py --validate
   post_build:
     commands:
-      - zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
-      - aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
+      #- zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
+      #- aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
       - echo Entering post-build phase...
       - |
         if [ "$CODEBUILD_BUILD_SUCCEEDING" = "0" ]
