@@ -22,8 +22,12 @@ phases:
   build:
     commands:
       - python ./scripts/make_flyway.py
-      - echo Starting up flyway validate...
-      - python ./scripts/run_flyway.py --validate
+      - if [ "$GITHUB_EVENT_NAME" = "pull_request" ]
+        then
+          echo Starting up flyway validate...
+          python ./scripts/run_flyway.py --validate
+        fi
+      
   post_build:
     commands:
       #- zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
@@ -42,8 +46,8 @@ phases:
           if [ $? = 1 ]
           then 
             sh ./temp/rollback.sh
-            zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
-            aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
+            #zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
+            #aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
             exit 1
           fi
           zip -r artifacts.zip ab scripts buildspec.yml temp 1> /dev/null
