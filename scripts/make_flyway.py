@@ -135,7 +135,7 @@ def generate_flyway_filesystem(scripts_to_deploy):
                 new_file = os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name, content['new_file'])
                 shutil.copyfile(original_file, new_file)
     
-    logger.info("Generated Flyway filesystem:\n{}".format(json.dumps({
+    logger.info("Flyway filesystem successfully generated:\n{}".format(json.dumps({
         db + '.' + schema_name: str(len(flyway_filesystem[db][schema_name])) + ' files' 
         for db in flyway_filesystem.keys() for schema_name in flyway_filesystem[db].keys()
     }, indent=4)))
@@ -165,7 +165,8 @@ def generate_flyway_config(repo_schema_scripts):
                 os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
                 all_configurations[-1]
             )
-
+    logger.info("Flyway config successfully generated")
+    
 
 def generate_flyway_commands(scripts_to_deploy, command):
     if not os.path.exists(config.FLYWAY_OUTPUT_DIR):
@@ -179,40 +180,29 @@ def generate_flyway_commands(scripts_to_deploy, command):
             location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
             output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'.format(
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {} &> /dev/null'.format(
                 location, config_file, schema_name, output_file, command
             )
             migrate_cmds.append(cmd)
     
     utils.write_to_file(os.path.join(config.TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
+    logger.info("Flyway migrate/validate commands successfully generated")
 
 
 def make_flyway():
     repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
     
-    logger.info("Validating repository script names")
     validate.validate_repo_scripts(repo_schema_scripts)
-    logger.info("Validation completed successfully")
     
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy, new_scripts = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
-    logger.info("Validating backout scripts exist")
     validate.validate_backout_scripts(new_scripts, repo_backout_scripts)
-    logger.info("Validation completed successfully")
     
-    logger.info("Generating Flyway filesystem")
     generate_flyway_filesystem(scripts_to_deploy)
-    logger.info("Flyway filesystem successfully generated")
-    
-    logger.info("Generating Flyway config")
     generate_flyway_config(scripts_to_deploy)
-    logger.info("Flyway config successfully generated")
-    
-    logger.info("Generating Flyway migrate/validate commands")
     generate_flyway_commands(scripts_to_deploy, command='validate')
     generate_flyway_commands(scripts_to_deploy, command='migrate')
-    logger.info("Flyway migrate/validate commands successfully generated")
 
 
 if __name__ == '__main__':

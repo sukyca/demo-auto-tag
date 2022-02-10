@@ -32,6 +32,7 @@ def validate_repo_scripts(repo_schema_scripts):
                             script_name=urllib.parse.quote_plus(file_name), pattern=urllib.parse.quote_plus(pattern), path=db + "." + schema_name
                     ))
                     exit(1)
+    logger.info("Repository script names validation completed successfully")                    
 
 
 def validate_backout_scripts(new_scripts, repo_backout_scripts):
@@ -50,4 +51,5 @@ def validate_backout_scripts(new_scripts, repo_backout_scripts):
                         )
                     )
                     exit(1)
+    logger.info("Backout script names validation completed successfully")                    
                 
