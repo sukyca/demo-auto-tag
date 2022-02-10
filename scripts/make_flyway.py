@@ -180,7 +180,7 @@ def generate_flyway_commands(scripts_to_deploy, command):
             location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
             output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {} &> "{}"'.format(
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {} 1> /dev/null'.format(
                 location, config_file, schema_name, output_file, command, output_file
             )
             migrate_cmds.append(cmd)
