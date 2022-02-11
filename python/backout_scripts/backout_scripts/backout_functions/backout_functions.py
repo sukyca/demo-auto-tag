@@ -12,7 +12,7 @@ from . import utils
 logger = get_logger(__file__)
 DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).strftime('%Y%m%d%H%M%S'))
 deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
-
+deployment_dttm_utc = deployment_dttm_utc.strftime('%Y-%m-%d %H:%M:%S') + '+00:00'
 
 def undo_create_table(database: str, schema: str, table_name: str) -> None:
     """undo_create_table
@@ -178,45 +178,7 @@ def undo_drop_columns(database: str, schema: str, table_name: str, column_names:
     logger.info("Running {}".format('undo_drop_columns'))
     if not metadata.column_exists(database, schema, table_name, column_names):
         logger.info("Metadata check `column_exists` completed successfully")
-        conn_update = {
-            'database': database,
-            'schema': schema,
-        }
-        sql = get_sql_script('undo_drop_columns')
-        query = sql.format(
-            database=database,
-            schema=schema,
-            table_name=table_name,
-            deployment_dttm_utc=deployment_dttm_utc
-        )
-        queries = query.split(';')
-        logger.info("Queries resolved for undo_drop_columns function:")
-        for i, query in enumerate(filter(None, queries)):
-            query = query.strip()
-            logger.info("Query #{}:\n{}".format(i+1, query))
-            result = execute_query(query, conn_update)
-            utils.check_result_outcome(result, logger, error_message=errors.QueryExecutionFailure(
-                fn_name='undo_drop_columns', 
-                database=database, 
-                schema=schema, 
-                table_name=table_name,
-                query=query
-            ))
-            
-        if not metadata.table_exists(database, schema, table_name):
-            query = "UNDROP TABLE {}".format(table_name)
-            logger.info("Restore table failed. Running {}".format(query))
-            result = execute_query(query, conn_update)
-            utils.check_result_outcome(result, logger, 
-                success_message=errors.RestoreFailure("Restore table failure: table `{}.{}.{}` is not restored".format(database, schema, table_name)),
-                error_message=errors.QueryExecutionFailure(
-                    fn_name='restore_table (undrop table handler)', 
-                    database=database, 
-                    schema=schema, 
-                    table_name=table_name,
-                    query=query
-                )
-            )
+        restore_table(database, schema, table_name)
     else:
         logger.error(errors.ColumnExists(
             fn_name='undo_drop_columns', 
@@ -244,6 +206,15 @@ def restore_table(database: str, schema: str, table_name: str, use_epoch_time=Tr
             'database': database,
             'schema': schema,
         }
+        clone_sql = get_sql_script('clone_table')
+        clone_query = clone_sql.format(
+            database=database,
+            schema=schema,
+            table_name=table_name,
+            deployment_dttm_utc=deployment_dttm_utc
+        )
+        clone_result = execute_query(clone_query, conn_update)
+        
         sql = get_sql_script('restore_table')
         query = sql.format(
             database=database,
@@ -251,35 +222,48 @@ def restore_table(database: str, schema: str, table_name: str, use_epoch_time=Tr
             table_name=table_name,
             deployment_dttm_utc=deployment_dttm_utc
         )
-        queries = query.split(';')
-        logger.info("Queries resolved for restore_table function:")
-        for i, query in enumerate(filter(None, queries)):
-            query = query.strip()
-            logger.info("Query #{}:\n{}".format(i+1, query))
-            result = execute_query(query, conn_update)
-            utils.check_result_outcome(result, logger, error_message=errors.QueryExecutionFailure(
-                fn_name='undo_drop_columns', 
-                database=database, 
-                schema=schema, 
-                table_name=table_name,
-                query=query
-            ))
         
-        if not metadata.table_exists(database, schema, table_name):
-            query = "UNDROP TABLE {}".format(table_name)
-            logger.info("Restore table failed. Running {}".format(query))
-            result = execute_query(query, conn_update)
-            utils.check_result_outcome(result, logger, 
-                success_message=errors.RestoreFailure("Restore table failure: table `{}.{}.{}` is not restored".format(database, schema, table_name)),
-                error_message=errors.QueryExecutionFailure(
-                    fn_name='restore_table (undrop table handler)', 
+        utils.check_result_outcome(clone_result, logger, 
+            success_message='Time Travel CLONE operation completed successfully',
+            error_message=errors.QueryExecutionFailure(
+                fn_name='restore_table',
+                info='Time Travel CLONE operation failed. Please rollback changes by applying the following queries: {}\n{}'.format(clone_query, query),
+                database=database,
+                schema=schema,
+                table_name=table_name,
+                deployment_dttm_utc=deployment_dttm_utc
+            )
+        )
+        
+        if clone_result is not None:
+            queries = query.split(';')
+            logger.info("Queries resolved for restore_table function:")
+            for i, query in enumerate(filter(None, queries)):
+                query = query.strip()
+                logger.info("Query #{}:\n{}".format(i+1, query))
+                result = execute_query(query, conn_update)
+                utils.check_result_outcome(result, logger, error_message=errors.QueryExecutionFailure(
+                    fn_name='restore_table', 
                     database=database, 
                     schema=schema, 
                     table_name=table_name,
-                    use_epoch_time=use_epoch_time,
                     query=query
+                ))
+                
+            if not metadata.table_exists(database, schema, table_name):
+                query = "UNDROP TABLE {}".format(table_name)
+                logger.info("Restore table failed. Running {}".format(query))
+                result = execute_query(query, conn_update)
+                utils.check_result_outcome(result, logger, 
+                    success_message=errors.RestoreFailure("Restore table failure: table `{}.{}.{}` is not restored".format(database, schema, table_name)),
+                    error_message=errors.QueryExecutionFailure(
+                        fn_name='restore_table (undrop table handler)', 
+                        database=database, 
+                        schema=schema, 
+                        table_name=table_name,
+                        query=query
+                    )
                 )
-            )
     else:
         logger.error(errors.TableDoesNotExist(
             fn_name='restore_table', 
@@ -288,3 +272,9 @@ def restore_table(database: str, schema: str, table_name: str, use_epoch_time=Tr
             table_name=table_name,
             use_epoch_time=use_epoch_time
         ))
+
+
+def set_deployment_dttm_utc():
+    global deployment_dttm_utc
+    deployment_dttm_utc = dt.datetime.now(pytz.UTC)
+    deployment_dttm_utc = deployment_dttm_utc.strftime('%Y-%m-%d %H:%M:%S') + '+00:00'

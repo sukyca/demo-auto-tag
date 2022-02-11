@@ -8,9 +8,9 @@ ALLOWED_SQL_SCRIPTS = [
     # Create/Drop table
     'UNDO_CREATE_TABLE', 'UNDO_DROP_TABLE',
     # Add/Drop columns
-    'UNDO_ADD_COLUMNS', 'UNDO_DROP_COLUMNS',
-    # Revert CRUD changes
-    'RESTORE_TABLE'
+    'UNDO_ADD_COLUMNS',
+    # Time Travel scripts
+    'RESTORE_TABLE', 'CLONE_TABLE'
 ]
 
 

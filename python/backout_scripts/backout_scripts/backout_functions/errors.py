@@ -2,10 +2,9 @@ import json
 
 
 class BackoutScriptException(Exception):
-    def __init__(self, message=None, fn_name='undo_add_columns', **params):
+    def __init__(self, message=None, **params):
         error_message = ''
         message = self.message if message is None else message
-        params.update({'function_name': fn_name})
         error_message = '{}\n{}'.format(message, json.dumps(params, indent=2))
         super(BackoutScriptException, self).__init__(error_message)
 

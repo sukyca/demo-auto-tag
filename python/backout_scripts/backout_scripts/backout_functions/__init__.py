@@ -5,3 +5,4 @@ from .backout_functions import undo_add_column
 from .backout_functions import undo_drop_columns
 from .backout_functions import undo_drop_column
 from .backout_functions import restore_table
+from .backout_functions import set_deployment_dttm_utc

@@ -1,7 +1,3 @@
-import time
-import pytz
-import datetime as dt
-
 import backout_functions
 from backout_functions import metadata
 from backout_functions.snowflake_connection import execute_query
@@ -19,95 +15,68 @@ conn_update = {
 }
 
 
-# def test_undo_create_table():
-#     # create_table
-#     execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
-#     sql = backout_functions.utils.get_sql_script('undo_create_table')
-#     query = sql.format(database=database, schema=schema, table_name=table_name)
-#     execute_query(query, conn_update)
-#     ## undo_create_table
-#     backout_functions.undo_create_table(database=database, schema=schema, table_name=table_name)
-#     assert metadata.table_exists(database, schema, table_name) == False
+def test_undo_create_table():
+    # create_table
+    _recreate_test_table()
+    ## undo_create_table
+    backout_functions.undo_create_table(database=database, schema=schema, table_name=table_name)
+    assert metadata.table_exists(database, schema, table_name) == False
 
 
-# def test_undo_drop_table():
-#     if not metadata.table_exists(database, schema, table_name):
-#         execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
+def test_undo_drop_table():
+    _recreate_test_table()
     
-#     # drop_table
-#     execute_query('DROP TABLE {}'.format(table_name), conn_update)
-#     sql = backout_functions.utils.get_sql_script('undo_drop_table')
-#     query = sql.format(database=database, schema=schema, table_name=table_name)
-#     execute_query(query, conn_update)
-#     ## undo_drop_table
-#     backout_functions.undo_drop_table(database=database, schema=schema, table_name=table_name)
-#     assert metadata.table_exists(database, schema, table_name) == True
+    # drop_table
+    execute_query('DROP TABLE {}'.format(table_name), conn_update)
+    ## undo_drop_table
+    backout_functions.undo_drop_table(database=database, schema=schema, table_name=table_name)
+    assert metadata.table_exists(database, schema, table_name) == True
 
 
-# def test_undo_add_column():
-#     if not metadata.table_exists(database, schema, table_name):
-#         execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
+def test_undo_add_column():
+    _recreate_test_table()
     
-#     # add_column
-#     execute_query('ALTER TABLE {} ADD {} BOOLEAN'.format(table_name, column_name), conn_update)
-#     sql = backout_functions.utils.get_sql_script('undo_add_columns')
-#     query = sql.format(database=database, schema=schema, table_name=table_name, column_names=column_name)
-#     execute_query(query, conn_update)
-#     ## undo_add_column
-#     backout_functions.undo_add_column(database=database, schema=schema, table_name=table_name, column_name=column_name)
-#     assert metadata.column_exists(database, schema, table_name, [column_name]) == False
+    # add_column
+    execute_query('ALTER TABLE {} ADD {} BOOLEAN'.format(table_name, column_name), conn_update)
+    ## undo_add_column
+    backout_functions.undo_add_column(database=database, schema=schema, table_name=table_name, column_name=column_name)
+    assert metadata.column_exists(database, schema, table_name, [column_name]) == False
 
 
-# def test_undo_add_columns():
-#     if not metadata.table_exists(database, schema, table_name):
-#         execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
+def test_undo_add_columns():
+    _recreate_test_table()
     
-#     # add_columns
-#     execute_query('ALTER TABLE {} ADD {} BOOLEAN, {} BOOLEAN'.format(table_name, *column_names), conn_update)
-#     sql = backout_functions.utils.get_sql_script('undo_add_columns')
-#     query = sql.format(database=database, schema=schema, table_name=table_name, column_names=column_names)
-#     execute_query(query, conn_update)
-#     ## undo_add_columns
-#     backout_functions.undo_add_columns(database=database, schema=schema, table_name=table_name, column_names=column_names)
-#     assert metadata.column_exists(database, schema, table_name, column_names) == False
+    # add_columns
+    execute_query('ALTER TABLE {} ADD {} BOOLEAN, {} BOOLEAN'.format(table_name, *column_names), conn_update)
+    ## undo_add_columns
+    backout_functions.undo_add_columns(database=database, schema=schema, table_name=table_name, column_names=column_names)
+    assert metadata.column_exists(database, schema, table_name, column_names) == False
 
 
 def test_undo_drop_column():
-    if metadata.table_exists(database, schema, table_name):
-        execute_query('DROP TABLE {}'.format(table_name), conn_update)
-    execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
-    execute_query('COMMIT')
-    #time.sleep(10)
-    deployment_dttm_utc = dt.datetime.now(pytz.UTC)
+    _recreate_test_table()
     
     # drop_column
-    column_name = '_name'
+    column_name = '_NAME'
     execute_query('ALTER TABLE {} DROP COLUMN {}'.format(table_name, column_name), conn_update)
-    
-    sql = backout_functions.utils.get_sql_script('undo_drop_columns')
-    queries = sql.format(database=database, schema=schema, table_name=table_name, column_names=column_name, deployment_dttm_utc=deployment_dttm_utc)
-    for query in filter(None, queries.split(";")):
-        execute_query(query, conn_update)
     ## undo_drop_column
     backout_functions.undo_drop_column(database=database, schema=schema, table_name=table_name, column_name=column_name)
     assert metadata.column_exists(database, schema, table_name, [column_name]) == True
 
 
-# def test_undo_drop_columns():    
-#     if metadata.table_exists(database, schema, table_name):
-#         execute_query('DROP TABLE {}'.format(table_name), conn_update)
-#     execute_query('CREATE TABLE {} (id INT, _name VARCHAR, description VARCHAR)'.format(table_name), conn_update)
-#     time.sleep(3)
-#     deployment_dttm_utc = dt.datetime.now(pytz.UTC)
+def test_undo_drop_columns():    
+    _recreate_test_table()
     
-#     # drop_columns
-#     column_names = ['id', '_name']
-#     execute_query('ALTER TABLE {} DROP COLUMN {}, {}'.format(table_name, *column_names), conn_update)
-    
-#     sql = backout_functions.utils.get_sql_script('undo_drop_columns')
-#     queries = sql.format(database=database, schema=schema, table_name=table_name, column_names=column_names, deployment_dttm_utc=deployment_dttm_utc)
-#     for query in filter(None, queries.split(";")):
-#         execute_query(query, conn_update)
-#     ## undo_drop_columns
-#     backout_functions.undo_drop_columns(database=database, schema=schema, table_name=table_name, column_names=column_names)
-#     assert metadata.column_exists(database, schema, table_name, column_names) == True
+    # drop_columns
+    column_names = ['ID', '_NAME']
+    execute_query('ALTER TABLE {} DROP COLUMN {}, {}'.format(table_name, *column_names), conn_update)
+    ## undo_drop_columns
+    backout_functions.undo_drop_columns(database=database, schema=schema, table_name=table_name, column_names=column_names)
+    assert metadata.column_exists(database, schema, table_name, column_names) == True
+
+
+def _recreate_test_table():
+    if metadata.table_exists(database, schema, table_name):
+        execute_query('DROP TABLE {}'.format(table_name), conn_update)
+    execute_query('CREATE TABLE {} (ID INT, _NAME VARCHAR, description VARCHAR)'.format(table_name), conn_update)
+    backout_functions.set_deployment_dttm_utc()
