@@ -1,0 +1,42 @@
+{
+    "valid_create_table": {
+      "query": "CREATE TABLE TEMP_TABLE (id INT, _name VARCHAR)",
+      "result": [["Table TEMP_TABLE successfully created."]]
+    },
+    "invalid_create_table": {
+      "query": "CREATE TABLE TEMP_TABLE (id INT, _name VARCHAR)",
+      "result": []
+    },
+    "insert": {
+      "query": "INSERT INTO TEMP_TABLE VALUES (1, 'Name')",
+      "result": [[1]]
+    },
+    "update": {
+      "query": "UPDATE TEMP_TABLE SET _name='Name Update'",
+      "result": [[1,0]]
+    },
+    "valid_select": {
+      "query": "SELECT * FROM TEMP_TABLE",
+      "result": [[1,"Name Update"]]
+    },
+    "delete": {
+      "query": "DELETE FROM TEMP_TABLE WHERE id=1",
+      "result": [[1]]
+    },
+    "empty_select": {
+      "query": "SELECT * FROM TEMP_TABLE",
+      "result": []
+    },
+    "valid_drop_table": {
+      "query": "DROP TABLE TEMP_TABLE",
+      "result": [["TEMP_TABLE successfully dropped."]]
+    },
+    "invalid_select": {
+      "query": "SELECT * FROM TEMP_TABLE",
+      "result": []
+    },
+    "invalid_drop_table": {
+      "query": "DROP TABLE TEMP_TABLE",
+      "result": []
+    }
+  }

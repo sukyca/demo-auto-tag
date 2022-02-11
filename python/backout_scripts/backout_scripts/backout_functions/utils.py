@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 
+
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 ALLOWED_SQL_SCRIPTS = [
     # Create/Drop table
@@ -32,3 +33,12 @@ def get_logger(logger_name, **kwargs):
     )
 
     return logging.getLogger(logger_name)
+
+
+def check_result_outcome(result, logger, error_message, success_message=None):
+    if not success_message:
+        success_message = "Query execution completed successfully"
+    if result is not None:
+        logger.info(success_message)
+    else:
+        logger.error(error_message)

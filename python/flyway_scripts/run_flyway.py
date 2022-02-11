@@ -1,3 +1,4 @@
+from distutils import command
 import os
 import re
 import json
@@ -15,6 +16,7 @@ from snowflake_connection import execute_query
 logger = utils.get_logger(__file__)
 DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).strftime('%Y%m%d%H%M%S'))   
 deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
+
 
 def get_deserialized_command(command):
     _command = command.split(" -")
@@ -161,6 +163,31 @@ def execute_migrate_commands(commands, hide_command_output=False):
     return True
 
 
+def rollback_flyway():
+    repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
+    migrations = get_flyway_schema_migrations(repo_schema_scripts)
+    
+    logger.info("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
+    for migration in migrations[::-1]:
+        db = migration['database']
+        schema = migration['schema']
+        rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
+        
+        logger.info("Rolling back `{}.{}` using {}".format(db, schema, rollback_command))
+        rolled_back = os.system(rollback_command)
+        if rolled_back == 1: # error
+            pass # TODO
+    
+    for migration in migrations[::-1]:
+        db = migration['database']
+        schema = migration['schema']
+        query = 'DELETE FROM {}.{}."flyway_schema_history" WHERE "installed_rank"={}'
+        query = query.format(db, schema, migration['installed_rank'])
+        
+        execute_query(query, {'database': db, 'schema': schema})
+        logger.info("Ran `{}` successfully".format(query))
+
+
 def run_flyway(command_name):
     if command_name == 'validate':
         commands = get_commands('validate')
@@ -172,22 +199,7 @@ def run_flyway(command_name):
         commands = get_commands('migrate')
         executed_successfully = execute_migrate_commands(commands, hide_command_output=True)
         if not executed_successfully:
-            rollback_commands = []
-            repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
-            migrations = get_flyway_schema_migrations(repo_schema_scripts)
-            logger.info("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(migrations, indent=2)))
-            for migration in migrations:
-                db = migration['database']
-                schema = migration['schema']
-                query = 'DELETE FROM {}.{}."flyway_schema_history" WHERE "installed_rank"={}'
-                query = query.format(db, schema, migration['installed_rank'])
-                logger.info("Ran `{}`".format(query))
-                execute_query(query, {'database': db, 'schema': schema})
-                
-                rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
-                rollback_commands.append(rollback_command)
-            utils.write_to_file(os.path.join(config.TEMP_DIR, 'rollback.sh'), rollback_commands[::-1])
-            logger.debug("Resolved backout commands:\n{}".format(json.dumps(rollback_commands[::-1], indent=2)))
+            rollback_flyway()
             exit(1)
 
 
@@ -196,8 +208,15 @@ if __name__ == '__main__':
     parser.add_argument('--validate', default=False, action='store_true', help='Run flyway --validate')
     parser.add_argument('--migrate', default=False, action='store_true', help='Run flyway --migrate')
     args = vars(parser.parse_args())
-    #print(args)
-    for command_name, execute in args.items():
-        if execute:
-            run_flyway(command_name)
+    
+    _validate = args.pop('validate')
+    _migrate = args.pop('migrate')
+    
+    if _validate:
+        run_flyway('validate')
+    elif _migrate:
+        run_flyway('migrate')
+    else:
+        exit()
+
     

@@ -2,7 +2,8 @@ __pycache__/
 temp/
 .env
 .vscode/
-
+test_sql_outputs.py
+test-1.sh
 
 ab/EDP_CONSUMER/DW_PERSONETICS/V{}__3_T_TRANSACTIONS_ADD_COLUMN.sql
 ab/EDP_CONSUMER/DW_PERSONETICS/V{}__4_T_TRANSACTIONS_DROP_COLUMN_SYNTAX_ERROR.sql
