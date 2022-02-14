@@ -76,6 +76,8 @@ jobs:
         project-name: CodeBuildProject-0HmCLmrCTbsZ
         buildspec-override: ./buildspec.yml
         env-vars-for-codebuild: |
-          ENVIRONMENT
+          ENVIRONMENT,
+          GITHUB_EVENT_ACTION_NAME
       env:
        ENVIRONMENT: ${{ steps.set_env_name.outputs.env_name }}
+       GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}

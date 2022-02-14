@@ -10,7 +10,7 @@ jobs:
     name: pr-closed-run-codebuild
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
+    - name: Checkout Feature
       uses: actions/checkout@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,12 +34,15 @@ jobs:
       with:
         project-name: CodeBuildProject-0HmCLmrCTbsZ
         buildspec-override: ./buildspec.yml
+        env-vars-for-codebuild: |
+          GITHUB_EVENT_ACTION_NAME
+      env:
+       GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
         
     - name: CodeBuild fail
       if: ${{ failure() }}
       run: |
           echo "Reseting ${{ github.ref_name }} to previous commit."
-          git checkout ${{ github.ref_name }}
           git reset --hard HEAD~1
           git push -f origin ${{ github.ref_name }}
 
@@ -96,8 +99,8 @@ jobs:
       - name: Checkout Feature
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.head_ref }}
           fetch-depth: 0
+          ref: ${{ github.head_ref }}
           
       - name: Find tags
         run: |
@@ -124,8 +127,8 @@ jobs:
         uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ref: production
           fetch-depth: 0
+          ref: production
 
       - name: Delete tags
         run: |
