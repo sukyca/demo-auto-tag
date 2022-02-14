@@ -120,8 +120,6 @@ jobs:
           echo "NO_TAGS_FOUND=$NO_TAGS_FOUND" >> $GITHUB_ENV
           echo "FEATURE_BRANCH_TAGS=$FEATURE_BRANCH_TAGS" >> $GITHUB_ENV
 
-
-      
       - name: Checkout Production
         uses: actions/checkout@v2
         with:
@@ -140,12 +138,11 @@ jobs:
               git push origin --delete $tag
             done
             
-            git branch -D ${{ github.head_ref }}
             git push origin --delete ${{ github.head_ref }}
           elif [[ ${{ env.ALL_TAGS_FOUND }} == false && ${{ env.NO_TAGS_FOUND }} == true && ${{ github.event.pull_request.merged }} == true ]];
           then
             echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.head_ref }} branch'
-            git branch -D ${{ github.head_ref }}
+
             git push origin --delete ${{ github.head_ref }}
           else
             echo 'Feature branch HEAD does not point to the correct commit. No tags or branches were deleted.'

@@ -21,19 +21,17 @@ phases:
     commands:
       - python ./python/flyway_scripts/make_flyway.py
       - |
-        if [ "$GITHUB_EVENT_NAME" = "pull_request" ]
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_JOB" == "pr-opened-run-codebuild" ]]
         then
           echo Starting up flyway validate...
           python ./python/flyway_scripts/run_flyway.py --validate
         fi
-      - git checkout development
-      - git log --oneline
       
   post_build:
     commands:
       - echo Entering post-build phase...
       - |
-        if [ "$GITHUB_EVENT_NAME" = "push" ]
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" && "$GITHUB_JOB" == "pr-closed-run-codebuild" ]]
         then
           echo Starting up flyway migrate...
           python ./python/flyway_scripts/run_flyway.py --migrate
