@@ -23,6 +23,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
 
       - name: Validate branch is branched off of Production or off of dev-tag

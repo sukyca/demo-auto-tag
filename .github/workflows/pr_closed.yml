@@ -13,7 +13,7 @@ jobs:
     - name: Checkout Feature
       uses: actions/checkout@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.TOKEN }}
         fetch-depth: 0
       
     - name: Dump GitHub context
@@ -55,7 +55,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
 
       - name: Setup git config
@@ -126,7 +126,7 @@ jobs:
       - name: Checkout Production
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
           ref: production
 
