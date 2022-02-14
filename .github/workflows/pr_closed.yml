@@ -1,4 +1,4 @@
-name: Close pull request
+name: PR Close Validation
 
 on:
   pull_request:

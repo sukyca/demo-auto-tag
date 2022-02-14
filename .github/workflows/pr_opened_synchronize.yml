@@ -1,4 +1,4 @@
-name: Opened/Synchronize pull request
+name: PR Open/Sync Validation
 
 on:
   pull_request:
