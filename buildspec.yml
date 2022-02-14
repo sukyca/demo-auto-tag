@@ -21,7 +21,7 @@ phases:
     commands:
       - python ./python/flyway_scripts/make_flyway.py
       - |
-        if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$GITHUB_EVENT_ACTION_NAME" = "open" || "$GITHUB_EVENT_ACTION_NAME" = "synchronize" ]
+        if [ "$GITHUB_EVENT_NAME" -eq "pull_request" ] && ([ "$GITHUB_EVENT_ACTION_NAME" -eq "open" ] || [ "$GITHUB_EVENT_ACTION_NAME" -eq "synchronize" ]);
         then
           echo Starting up flyway validate...
           python ./python/flyway_scripts/run_flyway.py --validate
@@ -31,7 +31,7 @@ phases:
     commands:
       - echo Entering post-build phase...
       - |
-        if [ "$GITHUB_EVENT_NAME" = "pull_request" && "$GITHUB_EVENT_ACTION_NAME" = "close" ]
+        if [ "$GITHUB_EVENT_NAME" -eq "pull_request" ] && [ "$GITHUB_EVENT_ACTION_NAME" -eq "close" ];
         then
           echo Starting up flyway migrate...
           python ./python/flyway_scripts/run_flyway.py --migrate
@@ -43,7 +43,6 @@ phases:
           aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
         fi
       - echo Build finished on $(date -u)
-
 # artifacts:
 #   files:
 #     - 'ab/**/*'
