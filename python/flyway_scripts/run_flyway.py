@@ -80,21 +80,28 @@ def get_failed_validation_info(deserialized_command):
 def get_failed_migration_info(deserialized_command):
     command_output = deserialized_command.get('command_output')
     if command_output.get('success', False) == False:
-        print(json.dumps(command_output['error'], indent=2))
-        file_name = re.search(validate.VERSIONED_DEPLOYED_MIGRATIONS, command_output['error'].get('message')).group()
-        file_name = 'V{}__' + file_name.split('__')[1]
-        backout_file_name = file_name.replace('V{}', 'backout{}').replace('.sql', '.py')
         error_info = {
             'Database': command_output.get('database'),
             'Schema': command_output.get('schemaName'),
-            'File Name': file_name,
-            'File Path': os.path.join(command_output.get('database'), command_output.get('schemaName'), file_name),
-            'Backout File Name': backout_file_name,
-            'Backout File Path': os.path.join(command_output.get('database'), command_output.get('schemaName'), backout_file_name),
             'Initial Schema Version': command_output.get('initialSchemaVersion'),
             'Error Code': command_output['error'].get('errorCode'),
             'Error Description': command_output['error'].get('message'),
         }
+        
+        V_fn_exists = re.search(validate.VERSIONED_DEPLOYED_MIGRATIONS, command_output['error'].get('message'))
+        if V_fn_exists:
+            file_name = V_fn_exists.group()
+            file_name = 'V{}__' + file_name.split('__')[1]
+            backout_file_name = file_name.replace('V{}', 'backout{}').replace('.sql', '.py')
+            error_info.update({
+                'File Name': file_name,
+                'File Path': os.path.join(command_output.get('database'), command_output.get('schemaName'), file_name),
+                'Backout File Name': backout_file_name,
+                'Backout File Path': os.path.join(command_output.get('database'), command_output.get('schemaName'), backout_file_name),
+            })
+        else:
+            logger.warning("Encountered a non-versioned failed migration")
+        
         if command_output.get('warnings'):
             error_info.update({'Warnings': command_output.get('warnings')})
         return error_info
@@ -122,7 +129,17 @@ def get_flyway_schema_migrations(repo_schema_scripts):
                     'script': res[2],
                     'script_name': 'V{}__' + res[2].split('__')[1],
                     'success': res[3]
-                } for res in results
+                } if res[2].startswith('V') else
+                {
+                    'database': db,
+                    'schema': schema,
+                    'installed_rank': res[0],
+                    'version': res[1],
+                    'script': res[2],
+                    'script_name': res[2],
+                    'success': res[3]
+                }
+                for res in results
             ])
     return migrations
 
@@ -171,12 +188,14 @@ def rollback_flyway():
     for migration in migrations[::-1]:
         db = migration['database']
         schema = migration['schema']
-        rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
         
-        logger.info("Rolling back `{}.{}` using {}".format(db, schema, rollback_command))
-        rolled_back = os.system(rollback_command)
-        if rolled_back == 1: # error
-            pass # TODO
+        if migration['script_name'].startswith('V'):
+            rollback_command = 'python {}'.format(os.path.join(config.REPO_DIR, db, schema, repo_backout_scripts[db][schema][migration['script_name']]))
+            
+            logger.info("Rolling back `{}.{}` using {}".format(db, schema, rollback_command))
+            rolled_back = os.system(rollback_command)
+            if rolled_back == 1: # error
+                pass # TODO
     
     for migration in migrations[::-1]:
         db = migration['database']
@@ -197,7 +216,7 @@ def run_flyway(command_name):
     
     elif command_name == 'migrate':
         commands = get_commands('migrate')
-        executed_successfully = execute_migrate_commands(commands, hide_command_output=True)
+        executed_successfully = execute_migrate_commands(commands, hide_command_output=False)
         if not executed_successfully:
             rollback_flyway()
             exit(1)

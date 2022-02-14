@@ -5,10 +5,16 @@ import snowflake.connector
 
 import utils
 
+# conn_details = {
+#     'user': os.getenv('USER'),
+#     'password': os.getenv('PASSWORD'),
+#     'account': os.getenv('ACCOUNT'),
+# }
+
 conn_details = {
-    'user': os.getenv('USER'),
-    'password': os.getenv('PASSWORD'),
-    'account': os.getenv('ACCOUNT'),
+    'user': 'ahrelja',
+    'password': 'Iolap1go!',
+    'account': 'kv94459.us-east-2.aws',
 }
 logger = utils.get_logger(__file__)
 

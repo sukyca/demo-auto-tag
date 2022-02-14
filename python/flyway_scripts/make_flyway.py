@@ -2,6 +2,7 @@ import os
 import time
 import json
 import shutil
+import pytz
 import datetime as dt
 
 import utils
@@ -108,7 +109,7 @@ def generate_flyway_filesystem(scripts_to_deploy):
             flyway_filesystem[db][schema_name] = []
             for file_name in scripts_to_deploy[db][schema_name]:
                 time.sleep(0.001)
-                version = dt.datetime.utcnow().strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
+                version = dt.datetime.now(pytz.UTC).strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
                 if file_name.startswith('V'):
                     content = {
                         'original_file': 'V{}__' + utils.clean_script_name(file_name),
@@ -180,7 +181,7 @@ def generate_flyway_commands(scripts_to_deploy, command):
             location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
             output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {} 1> /dev/null'.format(
+            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'.format(
                 location, config_file, schema_name, output_file, command, output_file
             )
             migrate_cmds.append(cmd)

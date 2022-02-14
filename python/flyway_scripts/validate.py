@@ -9,7 +9,7 @@ logger = utils.get_logger(__file__)
 
 VERSIONED_MIGRATIONS = r'^V\{\}__\d+(_([A-Z]{2}|[A-Z]{3})-\d+)?_[a-zA-Z0-9_]+\.sql$'
 VERSIONED_MIGRATIONS_BACKOUT = r'^backout\{\}__\d+(_([A-Z]{2}|[A-Z]{3})-\d+)?_[a-zA-Z0-9_]+\.py$'
-REPEATABLE_MIGRATIONS = r'^R__[a-zA-Z0-9][a-zA-Z0-9_]+\.sql$'
+REPEATABLE_MIGRATIONS = r'^R__[a-zA-Z0-9_-]+\.sql$'
 
 VERSIONED_DEPLOYED_MIGRATIONS = r'V[0-9.]+__\d+(_([A-Z]{2}|[A-Z]{3})-\d+)?_[a-zA-Z0-9_]+\.sql'
 
@@ -38,18 +38,19 @@ def validate_repo_scripts(repo_schema_scripts):
 def validate_backout_scripts(new_scripts, repo_backout_scripts):
     for db in new_scripts.keys():
         for schema_name in new_scripts[db].keys():
-            for versioned_file_name in new_scripts[db][schema_name]:
-                default_file_name = versioned_file_name[0] + '{}__' + utils.clean_script_name(versioned_file_name)
-                
-                if default_file_name not in repo_backout_scripts[db][schema_name].keys():
-                    backout_file_name = 'backout{}__' + utils.clean_script_name(versioned_file_name).replace('.sql', '.py')
-                    print(json.dumps(repo_backout_scripts, indent=4))
-                    logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
-                        "Please create a python backout script named '{}'".format(
-                            os.path.join(db, schema_name, default_file_name),
-                            os.path.join(db, schema_name, backout_file_name),
+            for script_name in new_scripts[db][schema_name]:
+                if script_name.startswith('V'):
+                    default_file_name = script_name[0] + '{}__' + utils.clean_script_name(script_name)
+                    
+                    if default_file_name not in repo_backout_scripts[db][schema_name].keys():
+                        backout_file_name = 'backout{}__' + utils.clean_script_name(script_name).replace('.sql', '.py')
+                        print(json.dumps(repo_backout_scripts, indent=4))
+                        logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
+                            "Please create a python backout script named '{}'".format(
+                                os.path.join(db, schema_name, default_file_name),
+                                os.path.join(db, schema_name, backout_file_name),
+                            )
                         )
-                    )
-                    exit(1)
+                        exit(1)
     logger.info("Backout script names validation completed successfully")                    
                 
