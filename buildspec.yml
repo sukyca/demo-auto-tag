@@ -26,6 +26,8 @@ phases:
           echo Starting up flyway validate...
           python ./python/flyway_scripts/run_flyway.py --validate
         fi
+      - git checkout development
+      - git log --oneline
       
   post_build:
     commands:
