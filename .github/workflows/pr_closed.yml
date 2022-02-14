@@ -6,20 +6,54 @@ on:
     types: [closed]
 
 jobs:
-  pr-closed:
-    name: pr-closed
+  pr-closed-run-codebuild:
+    name: pr-closed-run-codebuild
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+      
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
+          
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: us-east-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        
+    - name: Run CodeBuild
+      uses: aws-actions/aws-codebuild-run-build@v1
+      with:
+        project-name: CodeBuildProject-0HmCLmrCTbsZ
+        buildspec-override: ./buildspec.yml
+        
+    - name: CodeBuild fail
+      if: ${{ failure() }}
+      run: |
+          echo "Reseting ${{ github.ref_name }} to previous commit."
+          git checkout ${{ github.ref_name }}
+          git reset --hard HEAD~1
+          git push -f origin ${{ github.ref_name }}
+
+
+  tag-merge:
+    name: tag-merge
+    needs: pr-closed-run-codebuild
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-        run: |
-          git config user.email "andrea.hrelja@associatedbank.com"
-          git config user.name "Andrea Hrelja"
-          #echo "$GITHUB_CONTEXT"
 
       - name: Tag merge
         if: ${{ github.event.pull_request.merged == true }}
@@ -48,8 +82,19 @@ jobs:
             git push origin "$TAG"
           fi
       
-      - name: Delete tags
-        if: ${{ github.base_ref == 'production' }}
+  tags-delete:
+    name: tags-delete
+    needs: tag-merge
+    runs-on: ubuntu-latest
+    if: ${{ github.base_ref == 'production' }}
+    steps:
+      - name: Checkout Feature
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          
+      - name: Find tags
         run: |
           DEV_TAG="dev-${{ github.head_ref }}"
           PROD_TAG="prod-${{ github.head_ref }}"
@@ -58,9 +103,6 @@ jobs:
           ALL_TAGS_FOUND=true
           NO_TAGS_FOUND=true
           
-          git fetch origin ${{ github.head_ref }}
-          git checkout ${{ github.head_ref }}
-          
           for tag in $FEATURE_BRANCH_TAGS;
           do
             if [[ -z $(git branch ${{ github.head_ref }} --contains $tag 2> /dev/null) ]];
@@ -68,13 +110,26 @@ jobs:
             else NO_TAGS_FOUND=false
             fi
           done
+
+          echo "ALL_TAGS_FOUND=$ALL_TAGS_FOUND" >> $GITHUB_ENV
+          echo "NO_TAGS_FOUND=$NO_TAGS_FOUND" >> $GITHUB_ENV
+          echo "FEATURE_BRANCH_TAGS=$FEATURE_BRANCH_TAGS" >> $GITHUB_ENV
+
+
       
-          git checkout production
-          
-          if [[ "$ALL_TAGS_FOUND" == true && "$NO_TAGS_FOUND" == false && ${{ github.event.pull_request.merged }} == true ]];
+      - name: Checkout Production
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: production
+          fetch-depth: 0
+
+      - name: Delete tags
+        run: |
+          if [[ ${{ env.ALL_TAGS_FOUND }} == true && ${{ env.NO_TAGS_FOUND }} == false && ${{ github.event.pull_request.merged }} == true ]];
           then
             echo 'Feature branch contains both dev and prod tags; Delete ${{ github.head_ref }} branch'
-            for tag in $FEATURE_BRANCH_TAGS;
+            for tag in ${{ env.FEATURE_BRANCH_TAGS }};
             do
               git tag -d $tag
               git push origin --delete $tag
@@ -82,7 +137,7 @@ jobs:
             
             git branch -D ${{ github.head_ref }}
             git push origin --delete ${{ github.head_ref }}
-          elif [[ "$ALL_TAGS_FOUND" == false && "$NO_TAGS_FOUND" == true && ${{ github.event.pull_request.merged }} == true ]];
+          elif [[ ${{ env.ALL_TAGS_FOUND }} == false && ${{ env.NO_TAGS_FOUND }} == true && ${{ github.event.pull_request.merged }} == true ]];
           then
             echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.head_ref }} branch'
             git branch -D ${{ github.head_ref }}

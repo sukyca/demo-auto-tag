@@ -1,0 +1,42 @@
+name: Push (Run CodeBuild)
+
+on:
+  workflow_dispatch:
+  
+jobs:
+  run-codebuild-on-push:
+    name: run-codebuild-on-push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+      
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
+          
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: us-east-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        
+    - name: Run CodeBuild
+      uses: aws-actions/aws-codebuild-run-build@v1
+      with:
+        project-name: CodeBuildProject-0HmCLmrCTbsZ
+        buildspec-override: ./buildspec.yml
+        
+    - name: CodeBuild fail
+      if: ${{ failure() }}
+      run: |
+          echo "Reseting ${{ github.ref_name }} to previous commit."
+          git checkout ${{ github.ref_name }}
+          git reset --hard HEAD~1
+          git push -f origin ${{ github.ref_name }}
