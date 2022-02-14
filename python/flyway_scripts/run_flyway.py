@@ -216,7 +216,7 @@ def run_flyway(command_name):
     
     elif command_name == 'migrate':
         commands = get_commands('migrate')
-        executed_successfully = execute_migrate_commands(commands, hide_command_output=False)
+        executed_successfully = execute_migrate_commands(commands, hide_command_output=True)
         if not executed_successfully:
             rollback_flyway()
             exit(1)
@@ -236,6 +236,4 @@ if __name__ == '__main__':
     elif _migrate:
         run_flyway('migrate')
     else:
-        exit()
-
-    
+        exit("Argument provided does not match any supported arguments (--validate, --migrate)")
