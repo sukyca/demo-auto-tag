@@ -55,6 +55,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
+      - name: Setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
       - name: Tag merge
         if: ${{ github.event.pull_request.merged == true }}
         run: |
