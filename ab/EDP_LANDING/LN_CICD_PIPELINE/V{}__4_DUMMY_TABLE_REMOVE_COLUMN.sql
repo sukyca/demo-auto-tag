@@ -1,4 +1,0 @@
--- Remove column from Dummy Table
-
-ALTER TABLE DUMMY_TABLE 
-DROP COLUMN TEST_COLUMN;
