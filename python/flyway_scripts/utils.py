@@ -1,3 +1,4 @@
+import os
 import sys
 import logging
 
@@ -15,13 +16,6 @@ def get_logger(logger_name, **kwargs):
     return logging.getLogger(logger_name)
 
 
-def clean_script_name(script_name):
-    if script_name == '<< Flyway Baseline >>':
-        return None
-    else:
-        return script_name.split('__')[1]
-
-
 def clean_schema_scripts(schema_scripts):
     clean_schema_names = {}
     for db in schema_scripts.keys():
@@ -30,7 +24,7 @@ def clean_schema_scripts(schema_scripts):
             clean_schema_names[db][schema_name] = set()
             for script_name in schema_scripts[db][schema_name]:
                 if script_name.startswith('V'):
-                    script_name = clean_script_name(script_name)
+                    script_name = script_name.split('__')[1]
                 clean_schema_names[db][schema_name].add(script_name)
     return clean_schema_names
 
@@ -58,7 +52,7 @@ def _get_sorted_files(files):
     versioned_files = []
     repeatable_files = []
     for file_name in files:
-        clean_file_name = clean_script_name(file_name)
+        clean_file_name = file_name.split('__')[1]
         if clean_file_name[0].isnumeric():
             file_order = int(clean_file_name.split("_")[0])
         else:
@@ -76,6 +70,11 @@ def _get_sorted_files(files):
     sorted_v = sorted(versioned_files, key=lambda x: x['file_order'], reverse=False)
     sorted_r = sorted(repeatable_files, key=lambda x: x['file_order'], reverse=False)
     return [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_r]
+
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 
 def write_to_file(path, content):

@@ -19,10 +19,10 @@ def get_deployed_flyway_scripts(database, schema):
         'database': database,
         'schema': schema
     }
-    query = 'SELECT * FROM "flyway_schema_history"'
+    query = 'SELECT "script" FROM "flyway_schema_history"'
     results = execute_query(query, conn_update)
-    script_names = [res[4] for res in results]
-    return script_names
+    for res in results:
+        yield res[0]
 
 
 def get_repo_schema_scripts():
@@ -112,7 +112,7 @@ def generate_flyway_filesystem(scripts_to_deploy):
                 version = dt.datetime.now(pytz.UTC).strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
                 if file_name.startswith('V'):
                     content = {
-                        'original_file': 'V{}__' + utils.clean_script_name(file_name),
+                        'original_file': 'V{}__' + file_name.split('__')[1],
                         'new_file': file_name.format(version)
                     }
                 else:
@@ -191,19 +191,22 @@ def generate_flyway_commands(scripts_to_deploy, command):
 
 
 def make_flyway():
+    start = time.time()
     repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
     
-    validate.validate_repo_scripts(repo_schema_scripts)
+    # validate.validate_repo_scripts(repo_schema_scripts)
     
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy, new_scripts = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
-    
-    validate.validate_backout_scripts(new_scripts, repo_backout_scripts)
-    
     generate_flyway_filesystem(scripts_to_deploy)
-    generate_flyway_config(scripts_to_deploy)
-    generate_flyway_commands(scripts_to_deploy, command='validate')
-    generate_flyway_commands(scripts_to_deploy, command='migrate')
+    end = time.time()
+    print("Time elapsed: {}s".format(end-start))
+    # validate.validate_backout_scripts(new_scripts, repo_backout_scripts)
+    
+    # generate_flyway_filesystem(scripts_to_deploy)
+    # generate_flyway_config(scripts_to_deploy)
+    # generate_flyway_commands(scripts_to_deploy, command='validate')
+    # generate_flyway_commands(scripts_to_deploy, command='migrate')
 
 
 if __name__ == '__main__':
