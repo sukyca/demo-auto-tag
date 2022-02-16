@@ -30,28 +30,28 @@ def validate_repo_scripts():
                 if match is None:
                     logger.error("InvalidScriptName: Script is located at '{path}'. Validation help: "
                         "https://regexr.com/?expression={pattern}&text={script_name}".format(
-                            script_name=urllib.parse.quote_plus(script_name), pattern=urllib.parse.quote_plus(pattern), path=db + "." + schema_name
+                            path=db + "." + schema,
+                            pattern=urllib.parse.quote_plus(pattern),
+                            script_name=urllib.parse.quote_plus(script_name)
                     ))
                     exit(1)
     logger.info("Repository script names validation completed successfully")                    
 
 
-def validate_backout_scripts(scripts_to_deploy, repo_backout_scripts):
+def validate_backout_scripts(scripts_to_deploy, scripts_to_backout):
     for db in scripts_to_deploy.keys():
         for schema in scripts_to_deploy[db].keys():
             for repo_script, db_script in scripts_to_deploy[db][schema].items():
-                deploy_script = db_script
-                
-                if db_script is None:
-                    deploy_script = repo_script.format('CURRENT_TIMESTAMP()')
-                
-                if repo_script.startswith('V'):
-                    backout_script = 'backout{}__' + utils.clean_script_name(repo_script).replace('.sql', '.py')
-                    print(json.dumps(repo_backout_scripts, indent=4))
+                if repo_script.startswith('V') and db_script is None and (
+                    repo_script not in scripts_to_backout[db][schema].keys() or
+                        repo_script in scripts_to_backout[db][schema].keys() 
+                        and scripts_to_backout[db][schema][repo_script] is None
+                    ):
+                    print(json.dumps(scripts_to_backout, indent=4))
                     logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
                         "Please create a python backout script named '{}'".format(
                             os.path.join(db, schema, repo_script),
-                            os.path.join(db, schema, backout_script),
+                            os.path.join(db, schema, 'backout{}__' + utils.clean_script_name(repo_script)),
                         )
                     )
                     exit(1)
