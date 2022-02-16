@@ -8,18 +8,19 @@ from snowflake_connection import execute_query
 
 import config
 import utils
+import validate
 
 logger = utils.get_logger(__file__)
-clean_script_name = lambda x: x.split('__')[1]
+
 
 def yield_script_items(db, schema, script_list):
     for script_name in script_list:
         if script_name.startswith('V'):
             script_type = 'versioned'
-            _clean_script_name = clean_script_name(script_name)
+            _clean_script_name = utils.clean_script_name(script_name)
         elif script_name.startswith('backout'):
             script_type = 'backout'
-            _clean_script_name = clean_script_name(script_name)
+            _clean_script_name = utils.clean_script_name(script_name)
         elif script_name.startswith('R'):
             script_type = 'repeatable'
             _clean_script_name = script_name
@@ -53,8 +54,7 @@ def get_db_schema_scripts(repo_schema_scripts):
         }
         query = 'SELECT "script" FROM "flyway_schema_history"'
         results = execute_query(query, conn_update)
-        for res in results:
-            yield res[0]
+        return [res[0] for res in results]
     
     db_schema_scripts = {}
     for db in repo_schema_scripts.keys():
@@ -119,14 +119,60 @@ def generate_flyway_filesystem(scripts_to_deploy):
     }, indent=4)))
 
 
+def generate_flyway_config(repo_schema_scripts):
+    if not os.path.exists(config.FLYWAY_CONFIG_DIR):
+        os.mkdir(config.FLYWAY_CONFIG_DIR)
+    
+    for db in repo_schema_scripts.keys():
+        configuration = ['flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db] + config.FLYWAY_CONFIG
+        for schema_name in repo_schema_scripts[db].keys():
+            utils.write_to_file(
+                os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
+                configuration + ['flyway.schemas={}'.format(schema_name)]
+            )
+    logger.info("Flyway config successfully generated")
+
+
+def generate_flyway_commands(scripts_to_deploy, command):
+    if not os.path.exists(config.FLYWAY_OUTPUT_DIR):
+        os.mkdir(config.FLYWAY_OUTPUT_DIR)
+    if not os.path.exists(os.path.join(config.FLYWAY_OUTPUT_DIR, command)):
+        os.mkdir(os.path.join(config.FLYWAY_OUTPUT_DIR, command))
+    
+    cmd_template = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'
+    migrate_cmds = []
+    for db in scripts_to_deploy.keys():
+        for schema_name in scripts_to_deploy[db].keys():
+            location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
+            config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
+            output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
+            
+            migrate_cmds.append(cmd_template.format(
+                location, config_file, schema_name, output_file, command, output_file
+            ))
+    
+    utils.write_to_file(os.path.join(config.TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
+    logger.info("Flyway migrate/validate commands successfully generated")
+
+
 def main():
     start = time.time()
     repo_schema_scripts = get_repo_schema_scripts()
+    
+    validate.validate_repo_scripts()
+    # validate.validate_backout_scripts(scripts_to_deploy, repo_backout_scripts)
+    
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
     
     generate_flyway_filesystem(scripts_to_deploy)
+    generate_flyway_config(scripts_to_deploy)
+    generate_flyway_commands(scripts_to_deploy, command='validate')
+    generate_flyway_commands(scripts_to_deploy, command='migrate')
+    
     end = time.time()
     print("Time elapsed: {}s".format(end-start))
 
-main()
+
+if __name__ == '__main__':
+    main()

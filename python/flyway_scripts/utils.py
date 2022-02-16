@@ -16,6 +16,9 @@ def get_logger(logger_name, **kwargs):
     return logging.getLogger(logger_name)
 
 
+clean_script_name = lambda x: x.split('__')[1]
+
+
 def clean_schema_scripts(schema_scripts):
     clean_schema_names = {}
     for db in schema_scripts.keys():
@@ -24,9 +27,29 @@ def clean_schema_scripts(schema_scripts):
             clean_schema_names[db][schema_name] = set()
             for script_name in schema_scripts[db][schema_name]:
                 if script_name.startswith('V'):
-                    script_name = script_name.split('__')[1]
+                    script_name = clean_script_name(script_name)
                 clean_schema_names[db][schema_name].add(script_name)
     return clean_schema_names
+
+
+def sorted_scripts(script_list):
+    script_obj_list = []
+    for script_name in script_list:
+        if script_name.startswith('V'):
+            _clean_script_name = clean_script_name(script_name)
+            if _clean_script_name[0].isnumeric():
+                file_order = int(_clean_script_name.split("_")[0])
+            else:
+                file_order = 0
+        
+            content = {
+                'clean_script_name': _clean_script_name,
+                'file_order': file_order
+            }
+            script_obj_list.append(content)
+    sorted_scripts = sorted(script_obj_list, key=lambda x: x['file_order'], reverse=False)
+    return sorted_scripts
+
 
 
 def _rename_deployed_scripts(deployed, db_scripts):
