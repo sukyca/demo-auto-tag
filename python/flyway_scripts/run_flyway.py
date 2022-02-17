@@ -243,7 +243,6 @@ def run_flyway(command_name):
 
 
 if __name__ == '__main__':
-    
     parser = argparse.ArgumentParser(description='Run flyway commands')
     parser.add_argument('--validate', default=False, action='store_true', help='Run flyway --validate')
     parser.add_argument('--migrate', default=False, action='store_true', help='Run flyway --migrate')

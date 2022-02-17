@@ -79,7 +79,8 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
         scripts_to_deploy[db] = {}
         scripts_to_backout[db] = {}
         for schema in repo_scripts[db].keys():
-            v_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] in ('versioned', 'repeatable')}
+            v_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'versioned'}
+            r_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'repeatable'}
             b_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'backout'}
             v_db_script_items = {x['clean_script_name']: x for x in db_scripts[db][schema] if x['script_type'] in ('versioned', 'repeatable')}
             
@@ -102,11 +103,15 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
                     v_repo_script_items[script_name]['script_name']: None
                 })
                 
-                if v_repo_script_items[script_name]['script_type'] == 'versioned':
-                    b_script_name = script_name.replace('.sql', '.py')
-                    scripts_to_backout[db][schema].update({
-                        v_repo_script_items[script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
-                    })
+                b_script_name = script_name.replace('.sql', '.py')
+                scripts_to_backout[db][schema].update({
+                    v_repo_script_items[script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
+                })
+
+            for script_name in r_repo_script_items.keys():
+                scripts_to_deploy[db][schema].update({
+                    r_repo_script_items[script_name]['script_name']: None
+                })
     
     logger.info("Scripts to deploy/backout:\n{}".format(json.dumps(scripts_to_backout, indent=2)))
     return scripts_to_deploy, scripts_to_backout
