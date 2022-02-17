@@ -4,9 +4,8 @@ temp/
 .vscode/
 test_sql_outputs.py
 test-1.sh
+test-2.sh
 ab-backup/
 
-ab/EDP_CONSUMER/DW_PERSONETICS/V{}__3_T_TRANSACTIONS_ADD_COLUMN.sql
-ab/EDP_CONSUMER/DW_PERSONETICS/V{}__4_T_TRANSACTIONS_DROP_COLUMN_SYNTAX_ERROR.sql
-ab/EDP_CONSUMER/DW_PERSONETICS/backout{}__3_T_TRANSACTIONS_ADD_COLUMN.py
-ab/EDP_CONSUMER/DW_PERSONETICS/backout{}__4_T_TRANSACTIONS_DROP_COLUMN_SYNTAX_ERROR.py
+python/flyway_scripts/0_make_flyway.py
+python/flyway_scripts/1_make_flyway.py
