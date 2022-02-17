@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import logging
 
 
@@ -43,12 +44,13 @@ def sorted_scripts(script_list):
                 file_order = 0
         
             content = {
+                'script_name': script_name,
                 'clean_script_name': _clean_script_name,
                 'file_order': file_order
             }
             script_obj_list.append(content)
     sorted_scripts = sorted(script_obj_list, key=lambda x: x['file_order'], reverse=False)
-    return sorted_scripts
+    return [script['script_name'] for script in sorted_scripts]
 
 
 
@@ -105,3 +107,8 @@ def write_to_file(path, content):
         content = '\n'.join(content)
     with open(path, 'w') as f:
         f.write(content)
+
+
+def read_json(path):
+    with open(path, 'r') as f:
+        return json.load(f)

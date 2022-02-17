@@ -43,18 +43,23 @@ def get_repo_schema_scripts():
     for db in os.listdir(config.REPO_DIR):
         repo_schema_scripts[db] = {}
         for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
-            repo_scripts = os.listdir(os.path.join(config.REPO_DIR, db, schema))
-            repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
+            if schema not in config.SKIP_SCHEMAS:
+                repo_scripts = os.listdir(os.path.join(config.REPO_DIR, db, schema))
+                repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
     return repo_schema_scripts
 
 
-def get_db_schema_scripts(repo_schema_scripts):
+def get_db_schema_scripts(repo_schema_scripts, deployment_dttm_utc=None):
     def get_deployed_flyway_scripts(database, schema):
         conn_update = {
             'database': database,
             'schema': schema
         }
-        query = 'SELECT "script" FROM "flyway_schema_history"'
+        if deployment_dttm_utc:
+            query = """SELECT "script" FROM "flyway_schema_history"
+            WHERE "installed_on" < '{}'""".format(deployment_dttm_utc)
+        else:
+            query = 'SELECT "script" FROM "flyway_schema_history"'
         results = execute_query(query, conn_update)
         return [res[0] for res in results]
     
@@ -96,14 +101,14 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
                 scripts_to_deploy[db][schema].update({
                     v_repo_script_items[script_name]['script_name']: None
                 })
+                
                 if v_repo_script_items[script_name]['script_type'] == 'versioned':
                     b_script_name = script_name.replace('.sql', '.py')
                     scripts_to_backout[db][schema].update({
                         v_repo_script_items[script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
                     })
-                
-    logger.info("Scripts to deploy:\n{}".format(json.dumps(scripts_to_deploy, indent=2)))
-    logger.info("Scripts to backout:\n{}".format(json.dumps(scripts_to_backout, indent=2)))
+    
+    logger.info("Scripts to deploy/backout:\n{}".format(json.dumps(scripts_to_backout, indent=2)))
     return scripts_to_deploy, scripts_to_backout
 
 
@@ -115,9 +120,10 @@ def generate_flyway_filesystem(scripts_to_deploy):
         utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db))
         for schema in scripts_to_deploy[db].keys():
             utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema))
-            for repo_script, db_script in scripts_to_deploy[db][schema].items():
-                deploy_script = db_script
-                if db_script is None:
+            sorted_scripts = utils.sorted_scripts(scripts_to_deploy[db][schema].keys())
+            for repo_script in sorted_scripts:
+                deploy_script = scripts_to_deploy[db][schema][repo_script]
+                if deploy_script is None:
                     time.sleep(0.001)
                     version = dt.datetime.now(pytz.UTC).strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
                     deploy_script = repo_script.format(version)
@@ -169,7 +175,6 @@ def generate_flyway_commands(scripts_to_deploy, command):
 
 
 def make_flyway():
-    start = time.time()
     repo_schema_scripts = get_repo_schema_scripts()
     
     validate.validate_repo_scripts()   
@@ -181,9 +186,6 @@ def make_flyway():
     generate_flyway_config(scripts_to_deploy)
     generate_flyway_commands(scripts_to_deploy, command='validate')
     generate_flyway_commands(scripts_to_deploy, command='migrate')
-    
-    end = time.time()
-    print("Time elapsed: {}s".format(end-start))
 
 
 if __name__ == '__main__':

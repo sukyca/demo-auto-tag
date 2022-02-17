@@ -1,7 +1,7 @@
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-REPO_DIR = os.path.join(BASE_DIR, 'ab')
+REPO_DIR = os.path.join(BASE_DIR, 'EDP_SNOWFLAKE')
 TEMP_DIR = os.path.join(BASE_DIR, 'temp')
 
 FLYWAY_CONFIG_DIR = os.path.join(TEMP_DIR, 'config')
@@ -19,4 +19,8 @@ FLYWAY_CONFIG = [
     'flyway.cleanDisabled=true',
     'flyway.createSchemas=false',
     'flyway.validateMigrationNaming=true'
+]
+
+SKIP_SCHEMAS = [
+    'ADMIN'
 ]
