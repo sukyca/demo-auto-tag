@@ -45,8 +45,7 @@ jobs:
    #       echo "Reseting ${{ github.ref_name }} to previous commit."
    #       git reset --hard HEAD~1
    #       git push -f origin ${{ github.ref_name }}
-
-
+   
   tag-merge:
     name: tag-merge
     needs: pr-closed-run-codebuild
