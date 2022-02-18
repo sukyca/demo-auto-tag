@@ -209,7 +209,7 @@ class FlywayRollback:
             schema = migration['schema']
             
             if migration['script_type'] == 'versioned':
-                rollback_command = 'python "{}"'.format(migration['backout_script_location'])
+                rollback_command = 'python "{}"'.format(migration['backout_script_repo_location'])
                 
                 logger.info("Rolling back `{}.{}` using {}".format(db, schema, rollback_command))
                 rolled_back = os.system(rollback_command)

@@ -112,3 +112,7 @@ def write_to_file(path, content):
 def read_json(path):
     with open(path, 'r') as f:
         return json.load(f)
+
+def read_txt(path):
+    with open(path, 'r') as f:
+        return f.read()
