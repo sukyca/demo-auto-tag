@@ -19,6 +19,7 @@ jobs:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: |
           echo "$GITHUB_CONTEXT"
+          echo "${{ github.ref_type }}"
 
       - name: Setup environment variables
         run: |
