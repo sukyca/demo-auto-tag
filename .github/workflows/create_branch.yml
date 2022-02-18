@@ -26,7 +26,6 @@ jobs:
         run: |
           echo "DEV_TAG=dev-${{ github.ref_name }}" >> $GITHUB_ENV
           echo "LAST_PROD_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
-
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
@@ -38,7 +37,6 @@ jobs:
           if [[ -z $(git branch ${{ github.ref_name }} --contains ${{ env.LAST_PROD_SHA }}) ]];
           then 
             echo "Feature branch != production. ${{ github.ref_name }} is not branched off of Production"
-
             if [[ -z $(git branch ${{ github.ref_name }} --contains ${{ env.DEV_TAG }} 2> /dev/null) ]];
             then
               echo "Feature branch ${{ github.ref_name }} is invalid. Delete in progress"
