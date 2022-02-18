@@ -1,0 +1,4 @@
+-- Add column to Dummy Table
+
+ALTER TABLE DUMMY_TABLE 
+ADD COLUMN TEST_COLUMN BOOLEAN;
