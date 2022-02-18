@@ -1,7 +1,6 @@
 #snowflake
 
-Repository
-x x x s 
+Repository 
 x x x s 
 x x x s 
 x x x s 
