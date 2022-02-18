@@ -20,7 +20,7 @@ logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
 
 def get_connection(conn_update=None):
     p_key= serialization.load_pem_private_key(
-        conn_details['private_key'].encode(),
+        conn_details['private_key'],
         password=conn_details['passphrase'].encode()
     )
 
