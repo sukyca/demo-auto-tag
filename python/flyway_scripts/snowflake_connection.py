@@ -13,6 +13,12 @@ conn_details = {
     'private_key': os.getenv('PRIVATE_KEY'),
 }
 
+print("conn_details: ", conn_details)
+print("conn_details['private_key']: ", conn_details['private_key'])
+print("type(conn_details['private_key']): ", type(conn_details['private_key']))
+print("str(conn_details['private_key']).encode(): ", str(conn_details['private_key']).encode())
+print("str(conn_details['private_key']).encode() == conn_details['private_key']: ", str(conn_details['private_key']).encode() == conn_details['private_key'])
+
 logger = utils.get_logger(__file__)
 
 logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
