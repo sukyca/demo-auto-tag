@@ -36,19 +36,19 @@ def clean_schema_scripts(schema_scripts):
 def sorted_scripts(script_list):
     script_obj_list = []
     for script_name in script_list:
+        file_order = 0
         if script_name.startswith('V'):
             _clean_script_name = clean_script_name(script_name)
             if _clean_script_name[0].isnumeric():
                 file_order = int(_clean_script_name.split("_")[0])
-            else:
-                file_order = 0
-        
-            content = {
-                'script_name': script_name,
-                'clean_script_name': _clean_script_name,
-                'file_order': file_order
-            }
-            script_obj_list.append(content)
+        else:
+            _clean_script_name = clean_script_name(script_name)
+        content = {
+            'script_name': script_name,
+            'clean_script_name': _clean_script_name,
+            'file_order': file_order
+        }
+        script_obj_list.append(content)
     sorted_scripts = sorted(script_obj_list, key=lambda x: x['file_order'], reverse=False)
     return [script['script_name'] for script in sorted_scripts]
 

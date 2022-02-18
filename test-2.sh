@@ -3,6 +3,8 @@
 
 git checkout production &> /dev/null
 git pull --all &> /dev/null
+git branch -D test-2 &> /dev/null
+git push origin --delete test-2 &> /dev/null
 git checkout -b test-2 &> /dev/null
 git push origin test-2 &> /dev/null
 gh pr create -B development -H test-2 --fill &> /dev/null
@@ -14,3 +16,4 @@ if [ $? = 0 ]
 then echo "test-2: SUCCESS"
 else echo "test-2: FAILURE"
 fi
+git checkout production

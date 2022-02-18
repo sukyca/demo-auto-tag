@@ -2,20 +2,35 @@ import os
 import time
 import logging
 import snowflake.connector
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 import utils
 
-# conn_details = {
-#     'user': os.getenv('USER'),
-#     'password': os.getenv('PASSWORD'),
-#     'account': os.getenv('ACCOUNT'),
-# }
-
 conn_details = {
-    'user': 'ahrelja',
-    'password': 'Iolap1go!',
-    'account': 'kv94459.us-east-2.aws',
+    'user': os.getenv('USER'),
+    'account': os.getenv('ACCOUNT'),
+    'passphrase': os.getenv('PASSPHRASE'),
+    'private_key': os.getenv('PRIVATE_KEY'),
 }
+
+p_key= serialization.load_pem_private_key(
+    conn_details['private_key'].encode(),
+    password=conn_details['passphrase'].encode(),
+    backend=default_backend()
+)
+
+pkb = p_key.private_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PrivateFormat.PKCS8,
+    encryption_algorithm=serialization.NoEncryption()
+)
+
+conn_details.update({'private_key': pkb})
+
+print("conn_details: ", conn_details)
+print("conn_details['private_key']: ", conn_details['private_key'])
+
 logger = utils.get_logger(__file__)
 
 logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
@@ -48,3 +63,9 @@ def execute_query(query, conn_update=None, retry_max=3, retry_delay=3):
     if result is None:
         return []
     return result
+
+
+if __name__ == '__main__':
+    conn = get_connection()
+    cursor = conn.cursor()
+    print(cursor.execute("SELECT 1").fetchall())

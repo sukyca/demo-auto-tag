@@ -8,4 +8,4 @@ test-2.sh
 ab-backup/
 
 python/flyway_scripts/0_make_flyway.py
-python/flyway_scripts/1_make_flyway.py
+python/flyway_scripts/0_run_flyway.py

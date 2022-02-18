@@ -2,8 +2,9 @@ version: 0.2
 env:
   secrets-manager:
     USER: "development/ab-demo/snowflake-credentials:user"
-    PASSWORD: "development/ab-demo/snowflake-credentials:password"
     ACCOUNT: "development/ab-demo/snowflake-credentials:account"
+    PASSPHRASE: "development/ab-demo/snowflake-credentials:passphrase"
+    PRIVATE_KEY: "development/ab-demo/snowflake-credentials-private-key"
 
 phases:
   pre_build:
