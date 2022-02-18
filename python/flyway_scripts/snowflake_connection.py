@@ -6,7 +6,6 @@ from cryptography.hazmat.primitives import serialization
 
 import utils
 
-
 conn_details = {
     'user': os.getenv('USER'),
     'account': os.getenv('ACCOUNT'),
@@ -63,4 +62,4 @@ def execute_query(query, conn_update=None, retry_max=3, retry_delay=3):
 if __name__ == '__main__':
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT 1").fetchall()
+    print(cursor.execute("SELECT 1").fetchall())
