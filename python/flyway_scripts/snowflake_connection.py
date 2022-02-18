@@ -2,6 +2,7 @@ import os
 import time
 import logging
 import snowflake.connector
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
 import utils
@@ -27,7 +28,8 @@ logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
 def get_connection(conn_update=None):
     p_key= serialization.load_pem_private_key(
         conn_details['private_key'].encode(),
-        password=conn_details['passphrase'].encode()
+        password=conn_details['passphrase'].encode(),
+        backend=default_backend()
     )
 
     pkb = p_key.private_bytes(
