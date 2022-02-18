@@ -16,3 +16,4 @@ if [ $? = 0 ]
 then echo "test-2: SUCCESS"
 else echo "test-2: FAILURE"
 fi
+git checkout production
