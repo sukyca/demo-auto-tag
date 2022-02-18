@@ -5,13 +5,15 @@ import snowflake.connector
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 
+import config
 import utils
 
 conn_details = {
     'user': os.getenv('USER'),
     'account': os.getenv('ACCOUNT'),
     'passphrase': os.getenv('PASSPHRASE'),
-    'private_key': os.getenv('PRIVATE_KEY'),
+    #'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\Associated Bank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
+    'private_key': os.getenv('PRIVATE_KEY')
 }
 
 p_key= serialization.load_pem_private_key(
@@ -27,12 +29,7 @@ pkb = p_key.private_bytes(
 )
 
 conn_details.update({'private_key': pkb})
-
-print("conn_details: ", conn_details)
-print("conn_details['private_key']: ", conn_details['private_key'])
-
 logger = utils.get_logger(__file__)
-
 logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
 
 
