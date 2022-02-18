@@ -14,11 +14,22 @@ conn_details = {
     'private_key': os.getenv('PRIVATE_KEY'),
 }
 
+p_key= serialization.load_pem_private_key(
+    conn_details['private_key'].encode(),
+    password=conn_details['passphrase'].encode(),
+    backend=default_backend()
+)
+
+pkb = p_key.private_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PrivateFormat.PKCS8,
+    encryption_algorithm=serialization.NoEncryption()
+)
+
+conn_details.update({'private_key': pkb})
+
 print("conn_details: ", conn_details)
 print("conn_details['private_key']: ", conn_details['private_key'])
-print("type(conn_details['private_key']): ", type(conn_details['private_key']))
-print("str(conn_details['private_key']).encode(): ", str(conn_details['private_key']).encode())
-print("str(conn_details['private_key']).encode() == conn_details['private_key']: ", str(conn_details['private_key']).encode() == conn_details['private_key'])
 
 logger = utils.get_logger(__file__)
 
@@ -26,19 +37,6 @@ logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
 
 
 def get_connection(conn_update=None):
-    p_key= serialization.load_pem_private_key(
-        conn_details['private_key'].encode(),
-        password=conn_details['passphrase'].encode(),
-        backend=default_backend()
-    )
-
-    pkb = p_key.private_bytes(
-        encoding=serialization.Encoding.DER,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption()
-    )
-
-    conn_details.update({'private_key': pkb})
     if conn_update:
         conn_details.update(conn_update)
     return snowflake.connector.connect(**conn_details)
