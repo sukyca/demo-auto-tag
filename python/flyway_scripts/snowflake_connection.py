@@ -11,6 +11,7 @@ import utils
 conn_details = {
     'user': os.getenv('USER'),
     'account': os.getenv('ACCOUNT'),
+    'password': os.getenv('PASSWORD'),
     'passphrase': os.getenv('PASSPHRASE'),
     #'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\Associated Bank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
     'private_key': os.getenv('PRIVATE_KEY')
