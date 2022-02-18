@@ -44,7 +44,7 @@ phases:
           aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
         fi
       - echo Build finished on $(date -u)
-      
+    
 # artifacts:
 #   files:
 #     - 'ab/**/*'
