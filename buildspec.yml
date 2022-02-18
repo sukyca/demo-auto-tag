@@ -2,8 +2,9 @@ version: 0.2
 env:
   secrets-manager:
     USER: "development/ab-demo/snowflake-credentials:user"
-    PASSWORD: "development/ab-demo/snowflake-credentials:password"
     ACCOUNT: "development/ab-demo/snowflake-credentials:account"
+    PASSPHRASE: "development/ab-demo/snowflake-credentials:passphrase"
+    PRIVATE_KEY: "development/ab-demo/snowflake-credentials-private-key"
 
 phases:
   pre_build:
@@ -43,6 +44,7 @@ phases:
           aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
         fi
       - echo Build finished on $(date -u)
+      
 # artifacts:
 #   files:
 #     - 'ab/**/*'

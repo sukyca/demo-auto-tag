@@ -29,24 +29,23 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         
-    - name: Run CodeBuild
-      uses: aws-actions/aws-codebuild-run-build@v1
-      with:
-        project-name: CodeBuildProject-0HmCLmrCTbsZ
-        buildspec-override: ./buildspec.yml
-        env-vars-for-codebuild: |
-          GITHUB_EVENT_ACTION_NAME
-      env:
-       GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
+  #  - name: Run CodeBuild
+  #    uses: aws-actions/aws-codebuild-run-build@v1
+  #    with:
+  #      project-name: CodeBuildProject-0HmCLmrCTbsZ
+  #      buildspec-override: ./buildspec.yml
+  #      env-vars-for-codebuild: |
+  #        GITHUB_EVENT_ACTION_NAME
+  #    env:
+  #     GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
         
-    - name: CodeBuild fail
-      if: ${{ failure() }}
-      run: |
-          echo "Reseting ${{ github.ref_name }} to previous commit."
-          git reset --hard HEAD~1
-          git push -f origin ${{ github.ref_name }}
-
-
+   # - name: CodeBuild fail
+   #   if: ${{ failure() }}
+   #   run: |
+   #       echo "Reseting ${{ github.ref_name }} to previous commit."
+   #       git reset --hard HEAD~1
+   #       git push -f origin ${{ github.ref_name }}
+   
   tag-merge:
     name: tag-merge
     needs: pr-closed-run-codebuild

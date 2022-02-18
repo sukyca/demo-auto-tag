@@ -1,4 +1,6 @@
+import os
 import sys
+import json
 import logging
 
 
@@ -15,11 +17,7 @@ def get_logger(logger_name, **kwargs):
     return logging.getLogger(logger_name)
 
 
-def clean_script_name(script_name):
-    if script_name == '<< Flyway Baseline >>':
-        return None
-    else:
-        return script_name.split('__')[1]
+clean_script_name = lambda x: x.split('__')[1]
 
 
 def clean_schema_scripts(schema_scripts):
@@ -33,6 +31,27 @@ def clean_schema_scripts(schema_scripts):
                     script_name = clean_script_name(script_name)
                 clean_schema_names[db][schema_name].add(script_name)
     return clean_schema_names
+
+
+def sorted_scripts(script_list):
+    script_obj_list = []
+    for script_name in script_list:
+        file_order = 0
+        if script_name.startswith('V'):
+            _clean_script_name = clean_script_name(script_name)
+            if _clean_script_name[0].isnumeric():
+                file_order = int(_clean_script_name.split("_")[0])
+        else:
+            _clean_script_name = clean_script_name(script_name)
+        content = {
+            'script_name': script_name,
+            'clean_script_name': _clean_script_name,
+            'file_order': file_order
+        }
+        script_obj_list.append(content)
+    sorted_scripts = sorted(script_obj_list, key=lambda x: x['file_order'], reverse=False)
+    return [script['script_name'] for script in sorted_scripts]
+
 
 
 def _rename_deployed_scripts(deployed, db_scripts):
@@ -58,7 +77,7 @@ def _get_sorted_files(files):
     versioned_files = []
     repeatable_files = []
     for file_name in files:
-        clean_file_name = clean_script_name(file_name)
+        clean_file_name = file_name.split('__')[1]
         if clean_file_name[0].isnumeric():
             file_order = int(clean_file_name.split("_")[0])
         else:
@@ -78,8 +97,18 @@ def _get_sorted_files(files):
     return [item['file_name'] for item in sorted_v] + [item['file_name'] for item in sorted_r]
 
 
+def mkdir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
 def write_to_file(path, content):
     if isinstance(content, list):
         content = '\n'.join(content)
     with open(path, 'w') as f:
         f.write(content)
+
+
+def read_json(path):
+    with open(path, 'r') as f:
+        return json.load(f)

@@ -1,144 +1,145 @@
 import os
-import time
 import json
+import time
 import shutil
 import pytz
 import datetime as dt
-
-import utils
-import config
-import validate
 from snowflake_connection import execute_query
 
+import config
+import utils
+import validate
 
 logger = utils.get_logger(__file__)
 
 
-def get_deployed_flyway_scripts(database, schema):
-    conn_update = {
-        'database': database,
-        'schema': schema
-    }
-    query = 'SELECT * FROM "flyway_schema_history"'
-    results = execute_query(query, conn_update)
-    script_names = [res[4] for res in results]
-    return script_names
+def get_script_items(db, schema, script_list):
+    script_items = []
+    for script_name in script_list:
+        if script_name.startswith('V'):
+            script_type = 'versioned'
+            _clean_script_name = utils.clean_script_name(script_name)
+        elif script_name.startswith('backout'):
+            script_type = 'backout'
+            _clean_script_name = utils.clean_script_name(script_name)
+        elif script_name.startswith('R'):
+            script_type = 'repeatable'
+            _clean_script_name = script_name
+        else:
+            script_type = 'unknown'
+            logger.warning('Encountered an invalid script type for file {}.{}.{}'.format(db, schema, script_name))
+        
+        item = {
+            'script_name': script_name, # script_name = V{}__TABLE_NAME.sql
+            'script_type': script_type, # script_type = ('versioned', 'backout', 'repeatable')
+            'clean_script_name': _clean_script_name # clean_script_name = TABLE_NAME.sql
+        }
+        script_items.append(item)
+    return script_items
 
 
 def get_repo_schema_scripts():
-    """Traverse all database/schema level folders in repo
-    Example output:
-    {
-        'EDP_CONSUMER': {
-            'DW_NCR': [list of files],
-            'DW_NCRUA': [list of files]
-        },
-        'EDP_CONFIG': {
-            'DW_CFN': [list of files],
-            'DW_CG': [list of files],
-        }
-        ...
-    }
-
-    Returns:
-        dict: Contains a dictionary for each schema with 
-              a list of files in the repository schema level
-    """
     repo_schema_scripts = {}
-    repo_backout_scripts = {}
     for db in os.listdir(config.REPO_DIR):
         repo_schema_scripts[db] = {}
-        repo_backout_scripts[db] = {}
         for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
-            repo_schema_scripts[db][schema] = []
-            repo_backout_scripts[db][schema] = {}
-            for file_name in os.listdir(os.path.join(config.REPO_DIR, db, schema)):
-                if file_name.endswith('.sql'):
-                    repo_schema_scripts[db][schema].append(file_name) # file_name = V{}__TABLE_NAME.sql
-                elif file_name.endswith('.py'):
-                    repo_backout_scripts[db][schema].update({
-                        file_name.replace('backout', 'V').replace('.py', '.sql'): file_name # file_name = backout{}__TABLE_NAME.py
-                    })
-    return repo_schema_scripts, repo_backout_scripts
+            if schema not in config.SKIP_SCHEMAS:
+                repo_scripts = os.listdir(os.path.join(config.REPO_DIR, db, schema))
+                repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
+    return repo_schema_scripts
 
 
-def get_db_schema_scripts(repo_schema_scripts):
+def get_db_schema_scripts(repo_schema_scripts, deployment_dttm_utc=None):
+    def get_deployed_flyway_scripts(database, schema):
+        conn_update = {
+            'database': database,
+            'schema': schema
+        }
+        if deployment_dttm_utc:
+            query = """SELECT "script" FROM "flyway_schema_history"
+            WHERE "installed_on" < '{}'""".format(deployment_dttm_utc)
+        else:
+            query = 'SELECT "script" FROM "flyway_schema_history"'
+        results = execute_query(query, conn_update)
+        return [res[0] for res in results]
+    
     db_schema_scripts = {}
     for db in repo_schema_scripts.keys():
         db_schema_scripts[db] = {}
-        for schema_name in repo_schema_scripts[db].keys():
-            db_schema_scripts[db][schema_name] = []
-            for script_name in get_deployed_flyway_scripts(database=db, schema=schema_name):
-                db_schema_scripts[db][schema_name].append(script_name) # script_name = V2022.01.01.10.30.00.100__TABLE_NAME.sql
+        for schema in repo_schema_scripts[db].keys():
+            deployed_flyway_scripts = get_deployed_flyway_scripts(database=db, schema=schema)
+            db_schema_scripts[db][schema] = get_script_items(db, schema, deployed_flyway_scripts)
     return db_schema_scripts
 
 
-def get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts):
-    clean_repo_scripts = utils.clean_schema_scripts(repo_schema_scripts)
-    clean_db_scripts = utils.clean_schema_scripts(db_schema_scripts)
-    
-    new_scripts = {}
+def get_scripts_to_deploy(repo_scripts, db_scripts):
     scripts_to_deploy = {}
-    for db in clean_repo_scripts.keys():
-        new_scripts[db] = {}
+    scripts_to_backout = {}
+    for db in repo_scripts.keys():
         scripts_to_deploy[db] = {}
-        for schema_name in clean_repo_scripts[db].keys():
-            db_scripts   = clean_db_scripts[db][schema_name]
-            repo_scripts = clean_repo_scripts[db][schema_name]
+        scripts_to_backout[db] = {}
+        for schema in repo_scripts[db].keys():
+            v_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'versioned'}
+            r_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'repeatable'}
+            b_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'backout'}
+            v_db_script_items = {x['clean_script_name']: x for x in db_scripts[db][schema] if x['script_type'] in ('versioned', 'repeatable')}
             
-            deployed = utils._rename_deployed_scripts(repo_scripts.intersection(db_scripts), db_schema_scripts[db][schema_name])
-            to_deploy = utils._rename_to_deploy_scripts(repo_scripts.difference(db_scripts))        
-            new_scripts[db].update({schema_name: utils._get_sorted_files(to_deploy)})
-            scripts_to_deploy[db][schema_name] = utils._get_sorted_files(deployed + to_deploy)
+            v_repo_scripts = set(v_repo_script_items.keys())
+            v_db_scripts = set(v_db_script_items.keys())
+
+            deployed = v_repo_scripts.intersection(v_db_scripts)
+            to_deploy = v_repo_scripts.difference(deployed)
+            
+            scripts_to_deploy[db][schema] = {}
+            scripts_to_backout[db][schema] = {}
+            
+            for script_name in deployed:
+                scripts_to_deploy[db][schema].update({
+                    v_repo_script_items[script_name]['script_name']: v_db_script_items[script_name]['script_name']
+                })
+            
+            for script_name in to_deploy:
+                scripts_to_deploy[db][schema].update({
+                    v_repo_script_items[script_name]['script_name']: None
+                })
+                
+                b_script_name = script_name.replace('.sql', '.py')
+                scripts_to_backout[db][schema].update({
+                    v_repo_script_items[script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
+                })
+
+            for script_name in r_repo_script_items.keys():
+                scripts_to_deploy[db][schema].update({
+                    r_repo_script_items[script_name]['script_name']: None
+                })
     
-    logger.info("Scripts to deploy:\n{}".format(json.dumps(new_scripts, indent=4)))
-    return scripts_to_deploy, new_scripts
+    logger.info("Scripts to deploy/backout:\n{}".format(json.dumps(scripts_to_backout, indent=2)))
+    return scripts_to_deploy, scripts_to_backout
 
 
 def generate_flyway_filesystem(scripts_to_deploy):
-    if not os.path.exists(config.TEMP_DIR):
-        os.mkdir(config.TEMP_DIR)
+    utils.mkdir(config.TEMP_DIR)
+    utils.mkdir(config.FLYWAY_FILESYSTEM_DIR)
     
-    if not os.path.exists(config.FLYWAY_FILESYSTEM_DIR):
-        os.mkdir(config.FLYWAY_FILESYSTEM_DIR)
-    
-    flyway_filesystem = {}
     for db in scripts_to_deploy.keys():
-        flyway_filesystem[db] = {}
-        for schema_name in scripts_to_deploy[db].keys():
-            flyway_filesystem[db][schema_name] = []
-            for file_name in scripts_to_deploy[db][schema_name]:
-                time.sleep(0.001)
-                version = dt.datetime.now(pytz.UTC).strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
-                if file_name.startswith('V'):
-                    content = {
-                        'original_file': 'V{}__' + utils.clean_script_name(file_name),
-                        'new_file': file_name.format(version)
-                    }
-                else:
-                    content = {
-                        'original_file': file_name,
-                        'new_file': file_name
-                    }
-                    
-                flyway_filesystem[db][schema_name].append(content)
-    
-    for db in flyway_filesystem.keys():
-        if not os.path.exists(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db)):
-            os.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db))
-        
-        for schema_name, files in flyway_filesystem[db].items():
-            if not os.path.exists(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name)):
-                os.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
-
-            for content in files:
-                original_file = os.path.join(config.REPO_DIR, db, schema_name, content['original_file'])
-                new_file = os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name, content['new_file'])
+        utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db))
+        for schema in scripts_to_deploy[db].keys():
+            utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema))
+            sorted_scripts = utils.sorted_scripts(scripts_to_deploy[db][schema].keys())
+            for repo_script in sorted_scripts:
+                deploy_script = scripts_to_deploy[db][schema][repo_script]
+                if deploy_script is None:
+                    time.sleep(0.001)
+                    version = dt.datetime.now(pytz.UTC).strftime('%Y.%m.%d.%H.%M.%S.%f')[:-3]
+                    deploy_script = repo_script.format(version)
+                
+                original_file = os.path.join(config.REPO_DIR, db, schema, repo_script)
+                new_file = os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema, deploy_script)
                 shutil.copyfile(original_file, new_file)
     
     logger.info("Flyway filesystem successfully generated:\n{}".format(json.dumps({
-        db + '.' + schema_name: str(len(flyway_filesystem[db][schema_name])) + ' files' 
-        for db in flyway_filesystem.keys() for schema_name in flyway_filesystem[db].keys()
+        db + '.' + schema: str(len(scripts_to_deploy[db][schema])) + ' files' 
+        for db in scripts_to_deploy.keys() for schema in scripts_to_deploy[db].keys()
     }, indent=4)))
 
 
@@ -146,28 +147,15 @@ def generate_flyway_config(repo_schema_scripts):
     if not os.path.exists(config.FLYWAY_CONFIG_DIR):
         os.mkdir(config.FLYWAY_CONFIG_DIR)
     
-    all_configurations = []
-    configuration = [
-        'flyway.user=${USER}',
-        'flyway.password=${PASSWORD}',
-        'flyway.baselineOnMigrate=true',
-        'flyway.ignoreMissingMigrations=true',
-        'flyway.ignorePendingMigrations=true',
-        'flyway.cleanDisabled=true',
-        'flyway.createSchemas=false',
-        'flyway.validateMigrationNaming=true'
-    ]
-    
     for db in repo_schema_scripts.keys():
-        _configuration = ['flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db] + configuration
+        configuration = ['flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db] + config.FLYWAY_CONFIG
         for schema_name in repo_schema_scripts[db].keys():
-            all_configurations.append(_configuration + ['flyway.schemas={}'.format(schema_name)])
             utils.write_to_file(
                 os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
-                all_configurations[-1]
+                configuration + ['flyway.schemas={}'.format(schema_name)]
             )
     logger.info("Flyway config successfully generated")
-    
+
 
 def generate_flyway_commands(scripts_to_deploy, command):
     if not os.path.exists(config.FLYWAY_OUTPUT_DIR):
@@ -175,30 +163,29 @@ def generate_flyway_commands(scripts_to_deploy, command):
     if not os.path.exists(os.path.join(config.FLYWAY_OUTPUT_DIR, command)):
         os.mkdir(os.path.join(config.FLYWAY_OUTPUT_DIR, command))
     
+    cmd_template = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'
     migrate_cmds = []
     for db in scripts_to_deploy.keys():
         for schema_name in scripts_to_deploy[db].keys():
             location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
             config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
             output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
-            cmd = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'.format(
+            
+            migrate_cmds.append(cmd_template.format(
                 location, config_file, schema_name, output_file, command, output_file
-            )
-            migrate_cmds.append(cmd)
+            ))
     
     utils.write_to_file(os.path.join(config.TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
     logger.info("Flyway migrate/validate commands successfully generated")
 
 
 def make_flyway():
-    repo_schema_scripts, repo_backout_scripts = get_repo_schema_scripts()
+    repo_schema_scripts = get_repo_schema_scripts()
     
-    validate.validate_repo_scripts(repo_schema_scripts)
-    
+    validate.validate_repo_scripts()   
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
-    scripts_to_deploy, new_scripts = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
-    
-    validate.validate_backout_scripts(new_scripts, repo_backout_scripts)
+    scripts_to_deploy, scripts_to_backout = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    validate.validate_backout_scripts(scripts_to_deploy, scripts_to_backout)
     
     generate_flyway_filesystem(scripts_to_deploy)
     generate_flyway_config(scripts_to_deploy)

@@ -4,6 +4,7 @@ import json
 import urllib.parse
 
 import utils
+import config
 
 logger = utils.get_logger(__file__)
 
@@ -14,43 +15,45 @@ REPEATABLE_MIGRATIONS = r'^R__[a-zA-Z0-9_-]+\.sql$'
 VERSIONED_DEPLOYED_MIGRATIONS = r'V[0-9.]+__\d+(_([A-Z]{2}|[A-Z]{3})-\d+)?_[a-zA-Z0-9_]+\.sql'
 
 
-def validate_repo_scripts(repo_schema_scripts):
-    for db in repo_schema_scripts.keys():
-        for schema_name in repo_schema_scripts[db].keys():
-            for file_name in repo_schema_scripts[db][schema_name]:
+def validate_repo_scripts():
+    for db in os.listdir(config.REPO_DIR):
+        for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
+            for script_name in os.listdir(os.path.join(config.REPO_DIR, db, schema)):
                 pattern = r'^$'
-                if file_name.startswith('V') and file_name.endswith('.sql'):
+                if script_name.startswith('V') and script_name.endswith('.sql'):
                     pattern = VERSIONED_MIGRATIONS
-                elif file_name.startswith('R') and file_name.endswith('.sql'):
+                elif script_name.startswith('R') and script_name.endswith('.sql'):
                     pattern = REPEATABLE_MIGRATIONS
-                elif file_name.startswith('backout') and file_name.endswith('.py'):
+                elif script_name.startswith('backout') and script_name.endswith('.py'):
                     pattern = VERSIONED_MIGRATIONS_BACKOUT
-                match = re.match(pattern, file_name)
+                match = re.match(pattern, script_name)
                 if match is None:
                     logger.error("InvalidScriptName: Script is located at '{path}'. Validation help: "
                         "https://regexr.com/?expression={pattern}&text={script_name}".format(
-                            script_name=urllib.parse.quote_plus(file_name), pattern=urllib.parse.quote_plus(pattern), path=db + "." + schema_name
+                            path=db + "." + schema,
+                            pattern=urllib.parse.quote_plus(pattern),
+                            script_name=urllib.parse.quote_plus(script_name)
                     ))
                     exit(1)
     logger.info("Repository script names validation completed successfully")                    
 
 
-def validate_backout_scripts(new_scripts, repo_backout_scripts):
-    for db in new_scripts.keys():
-        for schema_name in new_scripts[db].keys():
-            for script_name in new_scripts[db][schema_name]:
-                if script_name.startswith('V'):
-                    default_file_name = script_name[0] + '{}__' + utils.clean_script_name(script_name)
-                    
-                    if default_file_name not in repo_backout_scripts[db][schema_name].keys():
-                        backout_file_name = 'backout{}__' + utils.clean_script_name(script_name).replace('.sql', '.py')
-                        print(json.dumps(repo_backout_scripts, indent=4))
-                        logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
-                            "Please create a python backout script named '{}'".format(
-                                os.path.join(db, schema_name, default_file_name),
-                                os.path.join(db, schema_name, backout_file_name),
-                            )
+def validate_backout_scripts(scripts_to_deploy, scripts_to_backout):
+    for db in scripts_to_deploy.keys():
+        for schema in scripts_to_deploy[db].keys():
+            for repo_script, db_script in scripts_to_deploy[db][schema].items():
+                if repo_script.startswith('V') and db_script is None and (
+                    repo_script not in scripts_to_backout[db][schema].keys() or
+                        repo_script in scripts_to_backout[db][schema].keys() 
+                        and scripts_to_backout[db][schema][repo_script] is None
+                    ):
+                    print(json.dumps(scripts_to_backout, indent=4))
+                    logger.error("MissingBackoutScript: Script '{}' is missing its backout python script. "
+                        "Please create a python backout script named '{}'".format(
+                            os.path.join(db, schema, repo_script),
+                            os.path.join(db, schema, 'backout{}__' + utils.clean_script_name(repo_script)),
                         )
-                        exit(1)
+                    )
+                    exit(1)
     logger.info("Backout script names validation completed successfully")                    
                 
