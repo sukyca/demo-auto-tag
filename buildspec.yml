@@ -4,6 +4,7 @@ env:
     USER: "development/ab-demo/snowflake-credentials:user"
     ACCOUNT: "development/ab-demo/snowflake-credentials:account"
     PASSPHRASE: "development/ab-demo/snowflake-credentials:passphrase"
+    PASSWORD: "development/ab-demo/snowflake-credentials:password"
     PRIVATE_KEY: "development/ab-demo/snowflake-credentials-private-key"
 
 phases:
