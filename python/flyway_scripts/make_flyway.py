@@ -145,8 +145,8 @@ def generate_flyway_filesystem(scripts_to_deploy):
 
 
 def generate_flyway_rsa():
-    # private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\Associated Bank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
-    private_key = os.getenv('PRIVATE_KEY', '')
+    # private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
+    private_key = os.getenv('PRIVATE_KEY')
     utils.write_to_file(config.FLYWAY_RSA_FILE, private_key)
 
 
@@ -155,10 +155,10 @@ def generate_flyway_config(repo_schema_scripts):
         os.mkdir(config.FLYWAY_CONFIG_DIR)
     
     for db in repo_schema_scripts.keys():
-        jdbc_rsa_suffix = '&authenticator=snowflake_jwt&private_key_file_pwd=${PASSPHRASE}&private_key_file=' + config.FLYWAY_RSA_FILE
+        jdbc_rsa_suffix = '&authenticator=snowflake_jwt&private_key_file_pwd=${PASSPHRASE}&private_key_file=' + config.FLYWAY_RSA_FILE.replace('\\', '/')
         jdbc_str = 'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db
-        # configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
-        configuration = [jdbc_str] + config.FLYWAY_CONFIG
+        configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
+        # configuration = [jdbc_str] + config.FLYWAY_CONFIG
         for schema_name in repo_schema_scripts[db].keys():
             utils.write_to_file(
                 os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
