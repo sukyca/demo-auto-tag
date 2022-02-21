@@ -13,7 +13,7 @@ FLYWAY_CONFIG = [
     # flyway.url configuration is handled by make_flyway.py
     # flyway.schemas configuration is handled by make_flyway.py
     'flyway.user=${USER}',
-    'flyway.password=${PASSWORD}',
+    # 'flyway.password=${PASSWORD}',
     'flyway.baselineOnMigrate=true',
     'flyway.ignoreMissingMigrations=true',
     'flyway.ignorePendingMigrations=true',
