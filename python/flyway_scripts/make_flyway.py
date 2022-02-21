@@ -145,8 +145,8 @@ def generate_flyway_filesystem(scripts_to_deploy):
 
 
 def generate_flyway_rsa():
-    private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
-    # private_key = os.getenv('PRIVATE_KEY', '')
+    # private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
+    private_key = os.getenv('PRIVATE_KEY')
     utils.write_to_file(config.FLYWAY_RSA_FILE, private_key)
 
 
