@@ -5,7 +5,6 @@ backout_scripts/backout_functions/backout_functions.py
 backout_scripts/backout_functions/errors.py
 backout_scripts/backout_functions/metadata.py
 backout_scripts/backout_functions/snowflake_connection.py
-backout_scripts/backout_functions/test.py
 backout_scripts/backout_functions/utils.py
 backout_scripts/backout_functions/templates/CLONE_TABLE.sql
 backout_scripts/backout_functions/templates/RESTORE_TABLE.sql
