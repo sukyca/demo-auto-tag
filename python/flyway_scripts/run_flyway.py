@@ -202,32 +202,37 @@ class FlywayRollback:
         #logger.info(json.dumps(rollback_migrations, indent=2))
         return rollback_migrations[::-1]
 
-    def execute(self):
+    def rollback_versioned_scripts(self, migrations):
         logger.info("The following migrations will be rolled back using the provided Python backout scripts:\n{}".format(json.dumps(self.migrations, indent=2)))
-        for migration in self.migrations:
-            db = migration['database']
-            schema = migration['schema']
+        for migration in migrations:
+            rollback_command = 'python "{}"'.format(migration['backout_script_repo_location'])
             
-            if migration['script_type'] == 'versioned':
-                rollback_command = 'python "{}"'.format(migration['backout_script_repo_location'])
-                
-                logger.info("Rolling back `{}.{}` using {}".format(db, schema, rollback_command))
-                rolled_back = os.system(rollback_command)
-                if rolled_back == 1: # error
-                    pass # TODO
-            
-            elif migration['script_type'] == 'repeatable':
-                production_script_content = subprocess.run(
-                    'git show production:{}'.format(migration['script_location']), 
-                    capture_output=True, 
-                    encoding='utf-8'
-                )
-                utils.write_to_file(migration['script_flyway_location'], production_script_content.stdout)
-                logger.info("Wrote the following content to {}:\n{}".format(
-                    migration['script_flyway_location'],
-                    production_script_content.stdout
-                ))
-                
+            logger.info("Rolling back `{}.{}` using {}".format(migration['database'], migration['schema'], rollback_command))
+            rolled_back = os.system(rollback_command)
+            if rolled_back == 1: # error
+                pass # TODO
+    
+    
+    def rollback_repeatable_scripts(self, migrations):
+        for migration in migrations:
+            production_script_content = subprocess.run(
+                'git show production:{}'.format(migration['script_location']), 
+                capture_output=True, 
+                encoding='utf-8'
+            )
+            utils.write_to_file(migration['script_flyway_location'], production_script_content.stdout)
+            logger.info("Wrote the following content to {}:\n{}".format(
+                migration['script_flyway_location'],
+                production_script_content.stdout
+            ))
+    
+    
+    def execute(self):
+        versioned_migrations = filter(lambda x: x['script_type'] == 'versioned', self.migrations)
+        repeatable_migrations = filter(lambda x: x['script_type'] == 'repeatable', self.migrations)
+        
+        self.rollback_versioned_scripts(versioned_migrations)
+        self.rollback_repeatable_scripts(repeatable_migrations)
         
         for migration in self.migrations:
             db = migration['database']
@@ -236,7 +241,8 @@ class FlywayRollback:
             query = query.format(db, schema, migration['installed_rank'])
             
             execute_query(query, {'database': db, 'schema': schema})
-            logger.info("Ran `{}` successfully".format(query))        
+            logger.info("Ran `{}` successfully".format(query))
+        
 
 
 def run_flyway(command_name):
