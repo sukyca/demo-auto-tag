@@ -1,9 +1,9 @@
-from asyncio import subprocess
 import os
 import re
 import json
 import pytz
 import argparse
+import subprocess
 import datetime as dt
 
 import utils
@@ -18,8 +18,11 @@ DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC)
 deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
 
 
-def get_commands(command):
-    commands_file_path = os.path.join(config.TEMP_DIR, command + '.sh')
+def get_commands(command, rollback=False):
+    flyway_dir = config.FLYWAY_DEPLOYMENT_DIR
+    if rollback:
+        flyway_dir = config.FLYWAY_ROLLBACK_DIR
+    commands_file_path = os.path.join(flyway_dir, command + '.sh')
     with open(commands_file_path, 'r') as f:
         return f.readlines()
 
@@ -193,8 +196,8 @@ class FlywayRollback:
                         'installed_rank': res[0],
                         'version': res[1],
                         'script': res[2],
-                        'script_repo_location': os.path.join(config.REPO_DIR, db, schema, script_name),
-                        'script_flyway_location': os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema, script_name),
+                        'script_repo_location': os.path.join(os.path.basename(config.REPO_DIR), db, schema, script_name),
+                        'script_flyway_location': os.path.join(db, schema, script_name),
                         'backout_script_repo_location': backout_script_repo_location,
                         'script_type': item['script_type'],
                         'success': res[3]
@@ -214,17 +217,36 @@ class FlywayRollback:
     
     
     def rollback_repeatable_scripts(self, migrations):
+        scripts_to_rollback = {}
         for migration in migrations:
-            production_script_content = subprocess.run(
-                'git show production:{}'.format(migration['script_location']), 
-                capture_output=True, 
-                encoding='utf-8'
-            )
-            utils.write_to_file(migration['script_flyway_location'], production_script_content.stdout)
+            db = migration['database']
+            schema = migration['schema']
+            if db not in scripts_to_rollback.keys():
+                scripts_to_rollback[db] = {}
+            if schema not in scripts_to_rollback[db].keys():
+                scripts_to_rollback[db][schema] = {}
+            utils.mkdir(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], db))
+            utils.mkdir(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], db, schema))
+            
+            fetch_prod_cmd = 'git show production:{}'.format(migration['script_repo_location'].replace('\\', '/'))
+            logger.info("Executing {}".format(fetch_prod_cmd))
+            production_script_content = subprocess.run(fetch_prod_cmd, capture_output=True, encoding='utf-8')
+            utils.write_to_file(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], migration['script_flyway_location']), production_script_content.stdout)
+            
             logger.info("Wrote the following content to {}:\n{}".format(
-                migration['script_flyway_location'],
+                os.path.join(config.FLYWAY_ROLLBACK['filesystem'], migration['script_flyway_location']),
                 production_script_content.stdout
             ))
+        
+        make_flyway.generate_flyway_config(scripts_to_rollback, rollback=True)
+        make_flyway.generate_flyway_commands(scripts_to_rollback, command='migrate', rollback=True)
+        
+        commands = get_commands('migrate', rollback=True)
+        for command in commands:
+            cmd = FlywayMigrateCommand(command)
+            success = cmd.execute(hide_command_output=False)
+            if not success:
+                logger.warning('Flyway rollback failed for command `{}`'.format(command))
     
     
     def execute(self):
@@ -232,7 +254,6 @@ class FlywayRollback:
         repeatable_migrations = filter(lambda x: x['script_type'] == 'repeatable', self.migrations)
         
         self.rollback_versioned_scripts(versioned_migrations)
-        self.rollback_repeatable_scripts(repeatable_migrations)
         
         for migration in self.migrations:
             db = migration['database']
@@ -242,7 +263,8 @@ class FlywayRollback:
             
             execute_query(query, {'database': db, 'schema': schema})
             logger.info("Ran `{}` successfully".format(query))
-        
+
+        self.rollback_repeatable_scripts(repeatable_migrations)
 
 
 def run_flyway(command_name):

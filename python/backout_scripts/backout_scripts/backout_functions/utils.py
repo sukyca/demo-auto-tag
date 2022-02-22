@@ -42,3 +42,8 @@ def check_result_outcome(result, logger, error_message, success_message=None):
         logger.info(success_message)
     else:
         logger.error(error_message)
+
+
+def read_txt(path):
+    with open(path, 'r') as f:
+        return f.read()
