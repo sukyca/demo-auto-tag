@@ -13,8 +13,8 @@ conn_details = {
     'account': os.getenv('ACCOUNT'),
     # 'password': os.getenv('PASSWORD'),
     'passphrase': os.getenv('PASSPHRASE'),
-    # 'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
-    'private_key': os.getenv('PRIVATE_KEY')
+    'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
+    # 'private_key': os.getenv('PRIVATE_KEY')
 }
 
 p_key= serialization.load_pem_private_key(
