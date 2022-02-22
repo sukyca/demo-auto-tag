@@ -2,7 +2,7 @@ import backout_functions
 
 database = 'EDP_CONSUMER'
 schema = 'DW_PERSONETICS'
-table_name = '"T_TRANSACTIONS"'
+table_name = 'T_TRANSACTIONS'
 column_name = 'TEST_COLUMN'
 
 backout_functions.undo_drop_column(

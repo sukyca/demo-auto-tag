@@ -5,13 +5,19 @@ import shutil
 import pytz
 import datetime as dt
 from snowflake_connection import execute_query
-from snowflake_connection import conn_details
 
 import config
 import utils
 import validate
 
 logger = utils.get_logger(__file__)
+
+
+def setup_filesystems():
+    temp_dirs = [config.TEMP_DIR, config.FLYWAY_DEPLOYMENT_DIR, config.FLYWAY_ROLLBACK_DIR]
+    temp_dirs += list(config.FLYWAY_DEPLOYMENT.values()) + list(config.FLYWAY_ROLLBACK.values())
+    for dir in temp_dirs:
+        utils.mkdir(dir)
 
 
 def get_script_items(db, schema, script_list):
@@ -119,13 +125,10 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
 
 
 def generate_flyway_filesystem(scripts_to_deploy):
-    utils.mkdir(config.TEMP_DIR)
-    utils.mkdir(config.FLYWAY_FILESYSTEM_DIR)
-    
     for db in scripts_to_deploy.keys():
-        utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db))
+        utils.mkdir(os.path.join(config.FLYWAY_DEPLOYMENT['filesystem'], db))
         for schema in scripts_to_deploy[db].keys():
-            utils.mkdir(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema))
+            utils.mkdir(os.path.join(config.FLYWAY_DEPLOYMENT['filesystem'], db, schema))
             sorted_scripts = utils.sorted_scripts(scripts_to_deploy[db][schema].keys())
             for repo_script in sorted_scripts:
                 deploy_script = scripts_to_deploy[db][schema][repo_script]
@@ -135,13 +138,62 @@ def generate_flyway_filesystem(scripts_to_deploy):
                     deploy_script = repo_script.format(version)
                 
                 original_file = os.path.join(config.REPO_DIR, db, schema, repo_script)
-                new_file = os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema, deploy_script)
+                new_file = os.path.join(config.FLYWAY_DEPLOYMENT['filesystem'], db, schema, deploy_script)
                 shutil.copyfile(original_file, new_file)
     
     logger.info("Flyway filesystem successfully generated:\n{}".format(json.dumps({
         db + '.' + schema: str(len(scripts_to_deploy[db][schema])) + ' files' 
         for db in scripts_to_deploy.keys() for schema in scripts_to_deploy[db].keys()
     }, indent=4)))
+    
+
+def generate_flyway_config(repo_schema_scripts, rollback=False):
+    flyway_filesystem = config.FLYWAY_DEPLOYMENT
+    if rollback:
+        flyway_filesystem = config.FLYWAY_ROLLBACK
+        
+    for db in repo_schema_scripts.keys():
+        jdbc_rsa_suffix = '&authenticator=snowflake_jwt&private_key_file_pwd=${PASSPHRASE}&private_key_file=' + config.FLYWAY_RSA_FILE.replace('\\', '/')
+        jdbc_str = 'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db
+        configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
+        # configuration = [jdbc_str] + config.FLYWAY_CONFIG
+        for schema_name in repo_schema_scripts[db].keys():
+            utils.write_to_file(
+                os.path.join(flyway_filesystem['config'], '{}.{}.config'.format(db, schema_name)), 
+                configuration + ['flyway.schemas={}'.format(schema_name)]
+            )
+    
+    if rollback:
+        logger.info("Flyway (rollback) config successfully generated")
+    else:
+        logger.info("Flyway (deployment) config successfully generated")
+
+
+def generate_flyway_commands(scripts_to_deploy, command, rollback=False):
+    flyway_dir = config.FLYWAY_DEPLOYMENT_DIR
+    flyway_filesystem = config.FLYWAY_DEPLOYMENT
+    if rollback:
+        flyway_dir = config.FLYWAY_ROLLBACK_DIR
+        flyway_filesystem = config.FLYWAY_ROLLBACK
+    
+    utils.mkdir(os.path.join(flyway_filesystem['output'], command))
+    cmd_template = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'
+    migrate_cmds = []
+    for db in scripts_to_deploy.keys():
+        for schema_name in scripts_to_deploy[db].keys():
+            location = 'filesystem://{}'.format(os.path.join(flyway_filesystem['filesystem'], db, schema_name))
+            config_file = os.path.join(flyway_filesystem['config'], '{}.{}.config'.format(db, schema_name))
+            output_file = os.path.join(flyway_filesystem['output'], command, '{}.{}.json'.format(db, schema_name))
+            
+            migrate_cmds.append(cmd_template.format(
+                location, config_file, schema_name, output_file, command, output_file
+            ))
+    
+    utils.write_to_file(os.path.join(flyway_dir, '{}.sh'.format(command)), migrate_cmds)
+    if rollback:
+        logger.info("Flyway migrate (rollback) commands successfully generated")
+    else:
+        logger.info("Flyway migrate/validate commands successfully generated")
 
 
 def generate_flyway_rsa():
@@ -150,46 +202,9 @@ def generate_flyway_rsa():
     utils.write_to_file(config.FLYWAY_RSA_FILE, private_key)
 
 
-def generate_flyway_config(repo_schema_scripts):
-    if not os.path.exists(config.FLYWAY_CONFIG_DIR):
-        os.mkdir(config.FLYWAY_CONFIG_DIR)
-    
-    for db in repo_schema_scripts.keys():
-        jdbc_rsa_suffix = '&authenticator=snowflake_jwt&private_key_file_pwd=${PASSPHRASE}&private_key_file=' + config.FLYWAY_RSA_FILE.replace('\\', '/')
-        jdbc_str = 'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db
-        configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
-        # configuration = [jdbc_str] + config.FLYWAY_CONFIG
-        for schema_name in repo_schema_scripts[db].keys():
-            utils.write_to_file(
-                os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name)), 
-                configuration + ['flyway.schemas={}'.format(schema_name)]
-            )
-    logger.info("Flyway config successfully generated")
-
-
-def generate_flyway_commands(scripts_to_deploy, command):
-    if not os.path.exists(config.FLYWAY_OUTPUT_DIR):
-        os.mkdir(config.FLYWAY_OUTPUT_DIR)
-    if not os.path.exists(os.path.join(config.FLYWAY_OUTPUT_DIR, command)):
-        os.mkdir(os.path.join(config.FLYWAY_OUTPUT_DIR, command))
-    
-    cmd_template = 'flyway -locations="{}" -configFiles="{}" -schemas={} -outputFile="{}" -outputType="json" {}'
-    migrate_cmds = []
-    for db in scripts_to_deploy.keys():
-        for schema_name in scripts_to_deploy[db].keys():
-            location = 'filesystem://{}'.format(os.path.join(config.FLYWAY_FILESYSTEM_DIR, db, schema_name))
-            config_file = os.path.join(config.FLYWAY_CONFIG_DIR, '{}.{}.config'.format(db, schema_name))
-            output_file = os.path.join(config.FLYWAY_OUTPUT_DIR, command, '{}.{}.json'.format(db, schema_name))
-            
-            migrate_cmds.append(cmd_template.format(
-                location, config_file, schema_name, output_file, command, output_file
-            ))
-    
-    utils.write_to_file(os.path.join(config.TEMP_DIR, '{}.sh'.format(command)), migrate_cmds)
-    logger.info("Flyway migrate/validate commands successfully generated")
-
-
 def make_flyway():
+    setup_filesystems()
+    generate_flyway_rsa()
     repo_schema_scripts = get_repo_schema_scripts()
     
     validate.validate_repo_scripts()   
@@ -201,7 +216,6 @@ def make_flyway():
     generate_flyway_config(scripts_to_deploy)
     generate_flyway_commands(scripts_to_deploy, command='validate')
     generate_flyway_commands(scripts_to_deploy, command='migrate')
-    generate_flyway_rsa()
 
 
 if __name__ == '__main__':
