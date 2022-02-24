@@ -48,11 +48,18 @@ def get_script_items(db, schema, script_list):
 def get_repo_schema_scripts():
     repo_schema_scripts = {}
     for db in os.listdir(config.REPO_DIR):
+        if db not in config.SKIP_SCHEMAS.keys():
+            config.SKIP_SCHEMAS[db] = []
+        
         repo_schema_scripts[db] = {}
-        for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
-            if schema not in config.SKIP_SCHEMAS:
-                repo_scripts = os.listdir(os.path.join(config.REPO_DIR, db, schema))
-                repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
+        filtered_schemas = filter(lambda x: x not in config.SKIP_SCHEMAS[db], os.listdir(os.path.join(config.REPO_DIR, db)))
+        for schema in filtered_schemas:
+            repo_scripts = filter(lambda x: x.endswith('.sql') or x.endswith('.py'), os.listdir(os.path.join(config.REPO_DIR, db, schema)))
+            repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
+        
+        if repo_schema_scripts[db] == {}:
+            repo_schema_scripts.pop(db)
+        
     return repo_schema_scripts
 
 
@@ -155,8 +162,8 @@ def generate_flyway_config(repo_schema_scripts, rollback=False):
     for db in repo_schema_scripts.keys():
         jdbc_rsa_suffix = '&authenticator=snowflake_jwt&private_key_file_pwd=${PASSPHRASE}&private_key_file=' + config.FLYWAY_RSA_FILE.replace('\\', '/')
         jdbc_str = 'flyway.url=jdbc:snowflake://${ACCOUNT}.snowflakecomputing.com/?db=' + db
-        configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
-        # configuration = [jdbc_str] + config.FLYWAY_CONFIG
+        # configuration = [jdbc_str + jdbc_rsa_suffix] + config.FLYWAY_CONFIG
+        configuration = [jdbc_str] + config.FLYWAY_CONFIG
         for schema_name in repo_schema_scripts[db].keys():
             utils.write_to_file(
                 os.path.join(flyway_filesystem['config'], '{}.{}.config'.format(db, schema_name)), 
@@ -197,14 +204,14 @@ def generate_flyway_commands(scripts_to_deploy, command, rollback=False):
 
 
 def generate_flyway_rsa():
-    private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
-    # private_key = os.getenv('PRIVATE_KEY')
+    # private_key = os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt'))
+    private_key = os.getenv('PRIVATE_KEY')
     utils.write_to_file(config.FLYWAY_RSA_FILE, private_key)
 
 
 def make_flyway():
     setup_filesystems()
-    generate_flyway_rsa()
+    # generate_flyway_rsa()
     repo_schema_scripts = get_repo_schema_scripts()
     
     validate.validate_repo_scripts()   
@@ -220,3 +227,4 @@ def make_flyway():
 
 if __name__ == '__main__':
     make_flyway()
+    

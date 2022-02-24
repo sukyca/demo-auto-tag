@@ -3,15 +3,19 @@ name: Push (Run CodeBuild)
 on:
   workflow_dispatch:
   
+permissions:
+  id-token: write
+  contents: write
+
 jobs:
-  run-codebuild-on-push:
+  push-run-codebuild:
     name: run-codebuild-on-push
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
         fetch-depth: 0
       
     - name: Dump GitHub context
@@ -23,17 +27,18 @@ jobs:
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-region: us-east-1
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-2
+        role-to-assume: "arn:aws:iam::722411629410:role/github_oidc"
+        role-duration-seconds: 1200
+        role-session-name: "MySessionName"
         
     - name: Run CodeBuild
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
-        project-name: CodeBuildProject-0HmCLmrCTbsZ
+        project-name: "CDPT-SNFLK-edp-terraform-snowflake-dev"
         buildspec-override: ./buildspec.yml
         
-    - name: CodeBuild fail
+    - name:  CodeBuild fail
       if: ${{ failure() }}
       run: |
           echo "Reseting ${{ github.ref_name }} to previous commit."

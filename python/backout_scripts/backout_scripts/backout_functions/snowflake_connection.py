@@ -11,25 +11,25 @@ from . import errors
 conn_details = {
     'user': os.getenv('USER'),
     'account': os.getenv('ACCOUNT'),
-    # 'password': os.getenv('PASSWORD'),
-    'passphrase': os.getenv('PASSPHRASE'),
-    'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
+    'password': os.getenv('PASSWORD'),
+    # 'passphrase': os.getenv('PASSPHRASE'),
+    # 'private_key': os.getenv('PRIVATE_KEY', utils.read_txt('C:\\Users\\AndreaHrelja\\Projects\\AssociatedBank\\snowflake-test-repo\\python\\flyway_scripts\\private_key.txt')),
     # 'private_key': os.getenv('PRIVATE_KEY')
 }
 
-p_key= serialization.load_pem_private_key(
-    conn_details['private_key'].encode(),
-    password=conn_details['passphrase'].encode(),
-    backend=default_backend()
-)
+# p_key= serialization.load_pem_private_key(
+#     conn_details['private_key'].encode(),
+#     password=conn_details['passphrase'].encode(),
+#     backend=default_backend()
+# )
 
-pkb = p_key.private_bytes(
-    encoding=serialization.Encoding.DER,
-    format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
-)
+# pkb = p_key.private_bytes(
+#     encoding=serialization.Encoding.DER,
+#     format=serialization.PrivateFormat.PKCS8,
+#     encryption_algorithm=serialization.NoEncryption()
+# )
 
-conn_details.update({'private_key': pkb})
+# conn_details.update({'private_key': pkb})
 logger = utils.get_logger(__file__)
 
 logging.getLogger('snowflake.connector').setLevel(logging.WARNING)

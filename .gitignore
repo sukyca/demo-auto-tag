@@ -1,5 +1,6 @@
 __pycache__/
 temp/
+tests/
 .env
 .vscode/
 test_sql_outputs.py
@@ -10,3 +11,4 @@ ab-backup/
 python/flyway_scripts/0_make_flyway.py
 python/flyway_scripts/0_run_flyway.py
 python/flyway_scripts/private_key.txt
+
