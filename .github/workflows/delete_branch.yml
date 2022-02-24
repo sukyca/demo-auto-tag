@@ -2,12 +2,12 @@ name: Delete Branch Validation
 
 on:
  delete:
-   tags-ignore: '**'
 
 jobs:
   delete-branch:
     name: delete-branch
     runs-on: ubuntu-latest
+    if: ${{ github.ref_type == 'branch' }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2

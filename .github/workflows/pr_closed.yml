@@ -13,15 +13,9 @@ jobs:
     - name: Checkout Feature
       uses: actions/checkout@v2
       with:
-        token: ${{ secrets.TOKEN }}
+        token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
         fetch-depth: 0
-      
-    - name: Dump GitHub context
-      env:
-        GITHUB_CONTEXT: ${{ toJSON(github) }}
-      run: |
-        echo "$GITHUB_CONTEXT"
-          
+
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
@@ -35,26 +29,29 @@ jobs:
         project-name: CodeBuildProject-0HmCLmrCTbsZ
         buildspec-override: ./buildspec.yml
         env-vars-for-codebuild: |
+          ENVIRONMENT,
           GITHUB_EVENT_ACTION_NAME
       env:
         GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
-          
+        ENVIRONMENT: ${{ github.base_ref }}
+        
     - name: CodeBuild fail
       if: ${{ failure() }}
       run: |
           echo "Reseting ${{ github.ref_name }} to previous commit."
           git reset --hard HEAD~1
           git push -f origin ${{ github.ref_name }}
-    
+
+
   tag-merge:
     name: tag-merge
     needs: pr-closed-run-codebuild
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Feature
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.TOKEN }}
+          token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
           fetch-depth: 0
 
       - name: Setup git config
@@ -98,6 +95,7 @@ jobs:
       - name: Checkout Feature
         uses: actions/checkout@v2
         with:
+          token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
           fetch-depth: 0
           ref: ${{ github.head_ref }}
           
@@ -125,7 +123,7 @@ jobs:
       - name: Checkout Production
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.TOKEN }}
+          token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
           fetch-depth: 0
           ref: production
 

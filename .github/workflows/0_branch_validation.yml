@@ -1,0 +1,55 @@
+#Check to ensure the latest main brach commit matches the new branches initial commit
+
+name: Feature Branch Validation
+
+on:
+  workflow_dispatch:
+jobs:
+  branch-validation:
+    runs-on: ubuntu-latest
+    if: "contains(github.ref_type, 'branch')"
+    steps:
+      - name: Checkout New Branch
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+
+      - name: Set tag variable
+        id: tag_var
+        shell: bash
+        run: |
+          echo "::set-output name=branch_tag::$(git describe --tags --abbrev=0 --always)"
+
+      - name: Declare Branch Sha
+        id: branch_sha
+        shell: bash
+        run: |
+          echo "::set-output name=current_sha_short::$(git rev-parse --short HEAD)"
+
+      - name: Checkout Production Branch
+        uses: actions/checkout@v2
+        with:
+          ref: production
+
+      - name: Declare Production Sha
+        id: main_sha
+        shell: bash
+        run: |
+          echo "::set-output name=main_sha_short::$(git rev-parse --short HEAD)"
+
+      - name: Print out of Production and New Branch Sha
+        run: |
+          echo "New Branch Sha: ${{ steps.branch_sha.outputs.current_sha_short }}"
+          echo "Production Branch Sha: ${{ steps.main_sha.outputs.main_sha_short }}"
+
+      - name: Check to ensure New branch is off of Production branch 
+        if: ${{ !startsWith(steps.tag_var.outputs.branch_tag, 'dev-') }}
+        run: |
+          if ${{ steps.branch_sha.outputs.current_sha_short != steps.main_sha.outputs.main_sha_short }};
+          then
+            echo "${{ github.ref_name }} is not branched off of Production. Branch deletion in progress."
+            git push origin --delete ${{ github.ref_name }}
+            exit 1
+          else 
+            exit 0
+          fi

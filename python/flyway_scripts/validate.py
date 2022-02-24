@@ -17,8 +17,10 @@ VERSIONED_DEPLOYED_MIGRATIONS = r'V[0-9.]+__\d+(_([A-Z]{2}|[A-Z]{3})-\d+)?_[a-zA
 
 def validate_repo_scripts():
     for db in os.listdir(config.REPO_DIR):
-        for schema in os.listdir(os.path.join(config.REPO_DIR, db)):
-            for script_name in os.listdir(os.path.join(config.REPO_DIR, db, schema)):
+        filtered_schemas = filter(lambda x: x not in config.SKIP_SCHEMAS[db], os.listdir(os.path.join(config.REPO_DIR, db)))
+        for schema in filtered_schemas:
+            repo_scripts = filter(lambda x: x.endswith('.sql') or x.endswith('.py'), os.listdir(os.path.join(config.REPO_DIR, db, schema)))
+            for script_name in repo_scripts:
                 pattern = r'^$'
                 if script_name.startswith('V') and script_name.endswith('.sql'):
                     pattern = VERSIONED_MIGRATIONS

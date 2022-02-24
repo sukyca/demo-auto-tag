@@ -14,6 +14,7 @@ from snowflake_connection import execute_query
 
 
 logger = utils.get_logger(__file__)
+ENVIRONMENT_NAME = os.getenv('ENVIRONMENT', 'development')
 DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).strftime('%Y%m%d%H%M%S'))
 deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
 
@@ -108,7 +109,7 @@ class FlywayValidateCommand(FlywayCommand):
         if not self.has_completed_successfully():
             invalid_migrations = self.error_info.pop('Invalid Migrations')
             logger.info("`flyway {}` failed:\n{}".format(self.command_name, json.dumps(self.error_info, indent=2)))
-            for i, invalid_migration in invalid_migrations:
+            for i, invalid_migration in enumerate(invalid_migrations):
                 logger.error("Error #{} Description:\n{}".format(i+1, invalid_migration['Error Description']))
         return self.has_completed_successfully()
 
@@ -228,9 +229,9 @@ class FlywayRollback:
             utils.mkdir(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], db))
             utils.mkdir(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], db, schema))
             
-            fetch_prod_cmd = 'git show production:{}'.format(migration['script_repo_location'].replace('\\', '/'))
+            fetch_prod_cmd = 'git show {}:{}'.format(ENVIRONMENT_NAME, migration['script_repo_location'].replace('\\', '/'))
             logger.info("Executing {}".format(fetch_prod_cmd))
-            production_script_content = subprocess.run(fetch_prod_cmd, capture_output=True, encoding='utf-8')
+            production_script_content = subprocess.run(fetch_prod_cmd, shell=True, capture_output=True, encoding='utf-8')
             utils.write_to_file(os.path.join(config.FLYWAY_ROLLBACK['filesystem'], migration['script_flyway_location']), production_script_content.stdout)
             
             logger.info("Wrote the following content to {}:\n{}".format(

@@ -4,25 +4,22 @@ on:
   pull_request:
     branches: [development, production]
     types: [opened, synchronize]
-    
 
 jobs:
   pr-opened-synchronize:
     name: pr-opened-synchronize
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Feature
+        uses: actions/checkout@v2
         with:
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
           
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
+      - name: Setup environment variables
         run: |
-          DEV_TAG="dev-${{ github.head_ref }}"
-          echo "DEV_TAG=$DEV_TAG" >> $GITHUB_ENV
-          echo "TAGGED_COMMIT_ID=$(git rev-list $DEV_TAG -n 1 2> /dev/null)" >> $GITHUB_ENV
-          #echo "$GITHUB_CONTEXT"
+          echo "DEV_TAG=dev-${{ github.head_ref }}" >> $GITHUB_ENV
+          echo "TAGGED_COMMIT_ID=$(git rev-list dev-${{ github.head_ref }} -n 1 2> /dev/null)" >> $GITHUB_ENV
       
       - name: Validate Lower Environment Tags Exist
         if: ${{ github.base_ref == 'production' }}
@@ -53,23 +50,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: pr-opened-synchronize
     steps:
-    - name: Checkout
+    - name: Checkout Feature
       uses: actions/checkout@v2
       with:
         token: ${{ secrets.TOKEN }}
-      
+    
     - name: Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
-        
-    - name: Set ENVIRONMENT variable
-      id: set_env_name
-      run: |
-        echo "::set-output name=env_name::${{ github.base_ref }}"
-          
+
     - name: Run CodeBuild
       uses: aws-actions/aws-codebuild-run-build@v1
       with:
@@ -79,5 +71,5 @@ jobs:
           ENVIRONMENT,
           GITHUB_EVENT_ACTION_NAME
       env:
-       ENVIRONMENT: ${{ steps.set_env_name.outputs.env_name }}
+       ENVIRONMENT: ${{ github.base_ref }}
        GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
