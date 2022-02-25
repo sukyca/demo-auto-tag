@@ -5,6 +5,9 @@ logger = utils.get_logger(__file__)
 
 
 def table_exists(database, schema, table_name):
+    if not '\"' in table_name:
+        table_name = table_name.upper()
+    
     query = """
     SELECT 
         *

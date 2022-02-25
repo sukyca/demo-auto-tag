@@ -13,6 +13,7 @@ logger = get_logger(__file__)
 DEPLOYMENT_DTTM_UTC = os.getenv('DEPLOYMENT_DTTM_UTC', dt.datetime.now(pytz.UTC).strftime('%Y%m%d%H%M%S'))
 deployment_dttm_utc = dt.datetime.strptime(DEPLOYMENT_DTTM_UTC, '%Y%m%d%H%M%S').replace(tzinfo=pytz.UTC)
 deployment_dttm_utc = deployment_dttm_utc.strftime('%Y-%m-%d %H:%M:%S') + '+00:00'
+logger.debug("Backout functions resolved deployment_dttm_utc: {}".format(deployment_dttm_utc))
 
 def undo_create_table(database: str, schema: str, table_name: str) -> None:
     """undo_create_table
@@ -213,6 +214,7 @@ def restore_table(database: str, schema: str, table_name: str, use_epoch_time=Tr
             table_name=table_name,
             deployment_dttm_utc=deployment_dttm_utc
         )
+        logger.info("Query resolved for restore table clone:\n{}".format(clone_query))
         clone_result = execute_query(clone_query, conn_update)
         
         sql = get_sql_script('restore_table')
@@ -252,7 +254,7 @@ def restore_table(database: str, schema: str, table_name: str, use_epoch_time=Tr
                 
             if not metadata.table_exists(database, schema, table_name):
                 query = "UNDROP TABLE {}".format(table_name)
-                logger.info("Restore table failed. Running {}".format(query))
+                logger.info("Restore table failed.\nRunning {}".format(query))
                 result = execute_query(query, conn_update)
                 utils.check_result_outcome(result, logger, 
                     success_message=errors.RestoreFailure("Restore table failure: table `{}.{}.{}` is not restored".format(database, schema, table_name)),
