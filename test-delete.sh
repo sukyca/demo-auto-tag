@@ -10,6 +10,8 @@
 
 git checkout production
 git pull --all
+git branch -D test-delete-workflow-branch
+git push origin --delete test-delete-workflow-branch
 git checkout -b test-delete-workflow-branch
 echo -e '\n' >> README.md
 git add .
