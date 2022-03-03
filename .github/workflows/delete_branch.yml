@@ -7,7 +7,7 @@ jobs:
   delete-branch:
     name: delete-branch
     runs-on: ubuntu-latest
-    if: ${{ github.ref_type == 'branch' }}
+    if: github.ref_type == 'branch'
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -36,7 +36,7 @@ jobs:
           fi
       
       - name: Recreate Feature branch
-        if: ${{ !steps.production_merge.outputs.merged && github.ref_type == 'branch' }}
+        if: ${{ !steps.production_merge.outputs.merged }}
         run: |
           LATEST_LOWER_ENV_TAG=""
           ALL_LOWER_ENV_TAGS="$DEV_TAG $TST_TAG"
