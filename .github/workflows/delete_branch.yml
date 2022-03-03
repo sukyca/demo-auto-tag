@@ -1,7 +1,7 @@
 name: Delete Branch Validation
 
 on:
- delete:
+  delete:
 
 jobs:
   delete-branch:
