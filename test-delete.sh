@@ -8,21 +8,20 @@
 # allow merge to production, after merge is complete try to delete test-delete-workflow-branch
 # if test-delete-workflow-branch is deleted the test is successfull
 
-git checkout production &> /dev/null
-git pull --all &> /dev/null
-git checkout -b test-delete-workflow-branch &> /dev/null
-echo -e '\n' >> README.md &> /dev/null
-git add . &> /dev/null
-git commit -m "test-delete-workflow-branch" &> /dev/null
-git push origin test-delete-workflow-branch &> /dev/null
-sleep 30
-# waiting for create_branch workflow to complete
+git checkout production
+git pull --all
+git checkout -b test-delete-workflow-branch
+echo -e '\n' >> README.md
+git add .
+git commit -m "test-delete-workflow-branch"
+git push origin test-delete-workflow-branch
+
 gh pr create -B development -H test-delete-workflow-branch --fill
 PR_ID=$(gh pr list --limit 1 --json number | tr -dc '0-9')
 sleep 10
 RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
 # open_workflow.yml starts - wait for check completion
-gh run watch $RUN_ID --exit-status &> /dev/null
+gh run watch $RUN_ID --exit-status
 
 if [ $? = 0 ]
 then 
@@ -31,7 +30,7 @@ then
     sleep 10
     RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
     # close_workflow.yml starts - wait for check completion
-    gh run watch $RUN_ID --exit-status &> /dev/null
+    gh run watch $RUN_ID --exit-status
 
     if [ $? = 0 ]
     then 
@@ -45,11 +44,11 @@ else
     exit 1
 fi
 
-git branch -D test-delete-workflow-branch &> /dev/null
-git push origin --delete test-delete-workflow-branch &> /dev/null
+git branch -D test-delete-workflow-branch
+git push origin --delete test-delete-workflow-branch
 sleep 10
 RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
-gh run watch $RUN_ID --exit-status &> /dev/null
+gh run watch $RUN_ID --exit-status
 
 if [ $? = 1 ]
 then 
@@ -64,7 +63,7 @@ PR_ID=$(gh pr list --limit 1 --json number | tr -dc '0-9')
 sleep 10
 RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
 # open_workflow.yml starts - wait for check completion
-gh run watch $RUN_ID --exit-status &> /dev/null
+gh run watch $RUN_ID --exit-status
 
 if [ $? = 0 ]
 then 
@@ -73,7 +72,7 @@ then
     sleep 10
     RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
     # close_workflow.yml starts - wait for check completion
-    gh run watch $RUN_ID --exit-status &> /dev/null
+    gh run watch $RUN_ID --exit-status
 
     if [ $? = 0 ]
     then 
@@ -87,11 +86,11 @@ else
     exit 1
 fi
 
-git branch -D test-delete-workflow-branch &> /dev/null
-git push origin --delete test-delete-workflow-branch &> /dev/null
+git branch -D test-delete-workflow-branch
+git push origin --delete test-delete-workflow-branch
 sleep 10
 RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
-gh run watch $RUN_ID --exit-status &> /dev/null
+gh run watch $RUN_ID --exit-status
 
 if [ $? = 0 ]
 then 
