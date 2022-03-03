@@ -83,3 +83,5 @@ else
     echo "test-3: Delete workflow recreated branch - pr_closed workflow is not working properly"
     exit 1
 fi
+
+git branch -D test-3
