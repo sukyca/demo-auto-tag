@@ -55,4 +55,5 @@ jobs:
             echo "Latest tag: $LATEST_LOWER_ENV_TAG. Delete reverted"
             git checkout -b ${{ github.event.ref }} $LATEST_LOWER_ENV_TAG
             git push origin ${{ github.event.ref }}
+            exit 1
           fi
