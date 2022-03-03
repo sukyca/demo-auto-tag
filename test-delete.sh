@@ -15,8 +15,7 @@ echo -e '\n' >> README.md
 git add .
 git commit -m "test-delete-workflow-branch"
 git push origin test-delete-workflow-branch
-sleep 30
-# waiting for create_branch workflow to complete
+
 gh pr create -B development -H test-delete-workflow-branch --fill
 PR_ID=$(gh pr list --limit 1 --json number | tr -dc '0-9')
 sleep 10
