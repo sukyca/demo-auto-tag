@@ -7,7 +7,7 @@ jobs:
   create-branch:
     name: create-branch
     runs-on: ubuntu-latest
-    if: ${{ github.ref_type == 'branch' }}
+    if: github.ref_type == 'branch'
     steps:     
       - name: Checkout Production
         uses: actions/checkout@v2
