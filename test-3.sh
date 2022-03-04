@@ -11,7 +11,7 @@
 git checkout production
 git pull --all
 git checkout -b test-3
-echo 'n' >> README.md
+echo -e '\n' >> README.md
 git add .
 git commit -m "test-3"
 git push origin test-3
