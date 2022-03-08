@@ -31,25 +31,20 @@ jobs:
       - name: Test-2-false-scenario
         run: |
           cd python/workflow_test_scripts
-          ./test-2-f.sh & PID=$!
-          wait $PID
+          sh "./test-2-f.sh"
       - name: Test-2-success-scenario
         run: |
           cd python/workflow_test_scripts
-          ./test-2-s.sh & PID=$!
-          wait $PID
+          sh "./test-2-s.sh"
       - name: Test-3-success-scenario
         run: |
           cd python/workflow_test_scripts
-          ./test-3-s.sh & PID=$!
-          wait $PID
+          sh "./test-3-s.sh"
       - name: Test-4-false-scenario
         run: |
           cd python/workflow_test_scripts
-          ./test-4-f.sh & PID=$!
-          wait $PID
+          sh "./test-4-f.sh"
       - name: Test-4-success-scenario
         run: |
           cd python/workflow_test_scripts
-          ./test-4-s.sh & PID=$!
-          wait $PID
+          sh "./test-4-s.sh"
