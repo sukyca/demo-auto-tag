@@ -15,13 +15,13 @@ sleep 10
 RUN_ID=$(gh run list --limit 1 --json databaseId | tr -dc '0-9')
 gh run watch $RUN_ID --exit-status
 
-if [ $? = 1 ]
+if [ $? = 0 ]
 then 
-    echo "test-4: Delete workflow recreated the branch - Workflow is not working properly"
-    echo "test-4: FAILURE"
-    exit 1
-else
     echo "test-4: Delete workflow deleted the branch - Workflow is working properly"
     echo "test-4: SUCCESS"
     exit 0
+else
+    echo "test-4: Delete workflow recreated the branch - Workflow is not working properly"
+    echo "test-4: FAILURE"
+    exit 1
 fi
