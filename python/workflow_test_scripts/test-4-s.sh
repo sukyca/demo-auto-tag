@@ -19,8 +19,8 @@ if [ $? = 1 ]
 then 
     echo "test-4: Delete workflow recreated the branch - Workflow is not working properly"
     echo "test-4: FAILURE"
+    exit 1
 else
     echo "test-4: Delete workflow deleted the branch - Workflow is working properly"
     echo "test-4: SUCCESS"
-    exit 1
 fi
