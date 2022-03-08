@@ -1,4 +1,4 @@
-name: Create Branch Validation
+name: Test workflows
 
 on:
   workflow_dispatch:
