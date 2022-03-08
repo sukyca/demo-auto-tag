@@ -38,6 +38,8 @@ else
     exit 1
 fi
 
+git checkout production
+
 gh pr create -B production -H test-2 --fill
 PR_ID=$(gh pr list --limit 1 --json number | tr -dc '0-9')
 sleep 10
