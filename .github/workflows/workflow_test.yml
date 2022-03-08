@@ -19,7 +19,10 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
 
-          echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+          echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_EN
+      - name: Permission setup
+        run: |
+          sudo chmod +x ./python/workflow_test_scripts/*.sh
       - name: Test-1-false-scenario
         run: |
           cd python/workflow_test_scripts
@@ -28,8 +31,6 @@ jobs:
       - name: Test-1-success-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-1-s.sh
-          git commit -a --allow-empty-message -m ''
           ./test-1-s.sh & PID=$!
           wait $PID
       - name: Test-2-false-scenario
@@ -40,28 +41,20 @@ jobs:
       - name: Test-2-success-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-2-s.sh
-          git commit -a --allow-empty-message -m ''
           ./test-2-s.sh & PID=$!
           wait $PID
       - name: Test-3-success-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-3-s.sh
-          git commit -a --allow-empty-message -m ''
           ./test-3-s.sh & PID=$!
           wait $PID
       - name: Test-4-false-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-4-f.sh
-          git commit -a --allow-empty-message -m ''
           ./test-4-f.sh & PID=$!
           wait $PID
       - name: Test-4-success-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-4-s.sh
-          git commit -a --allow-empty-message -m ''
           ./test-4-s.sh & PID=$!
           wait $PID

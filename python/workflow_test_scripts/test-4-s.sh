@@ -25,3 +25,5 @@ else
     echo "test-4: FAILURE"
     exit 1
 fi
+
+echo "Nothing to clean-up..."
