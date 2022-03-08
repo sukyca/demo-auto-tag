@@ -4,14 +4,6 @@ tests/
 .env
 .vscode/
 test_sql_outputs.py
-test-1-f.sh
-test-1-s.sh
-test-2-f.sh
-test-2-s.sh
-test-3-f.sh
-test-3-s.sh
-test-4-f.sh
-test-4-s.sh
 
 python/flyway_scripts/0_make_flyway.py
 python/flyway_scripts/0_run_flyway.py
