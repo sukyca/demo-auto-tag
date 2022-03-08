@@ -21,14 +21,17 @@ jobs:
 
           echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
       - name: Permission setup
+        shell: bash
         run: |
           chmod 775 ./python/workflow_test_scripts/*.sh
       - name: Test-1-false-scenario
+        shell: bash
         run: |
           cd python/workflow_test_scripts
           ./test-1-f.sh & PID=$!
           wait $PID
       - name: Test-1-success-scenario
+        shell: bash
         run: |
           cd python/workflow_test_scripts
           ./test-1-s.sh & PID=$!
