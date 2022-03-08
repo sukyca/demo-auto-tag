@@ -23,6 +23,7 @@ jobs:
           ls 
           cd python
           chmod -R +x workflow_test_scripts
+          git commit -a --allow-empty-message -m ''
           cd workflow_test_scripts
           ./test-1-f.sh & PID=$!
           wait $PID
