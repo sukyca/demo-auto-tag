@@ -28,13 +28,13 @@ jobs:
       - name: Test-1-success-scenario
         run: |
           cd python/workflow_test_scripts
+          chmod +x test-1-s.sh
+          git commit -a --allow-empty-message -m ''
           ./test-1-s.sh & PID=$!
           wait $PID
       - name: Test-2-false-scenario
         run: |
           cd python/workflow_test_scripts
-          chmod +x test-2-f.sh
-          git commit -a --allow-empty-message -m ''
           ./test-2-f.sh & PID=$!
           wait $PID
       - name: Test-2-success-scenario
