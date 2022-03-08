@@ -19,7 +19,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
 
-          echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_EN
+          echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
       - name: Permission setup
         run: |
           sudo chmod +x ./python/workflow_test_scripts/*.sh
