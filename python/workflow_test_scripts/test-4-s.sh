@@ -23,4 +23,5 @@ then
 else
     echo "test-4: Delete workflow deleted the branch - Workflow is working properly"
     echo "test-4: SUCCESS"
+    exit 0
 fi
