@@ -24,7 +24,7 @@ jobs:
         run: |
           ls 
           cd python
-          chmod -R +x workflow_test_scripts
+          chmod -R +x workflow_test_scripts *
           git commit -a --allow-empty-message -m ''
       - name: Test-1-false-scenario
         run: |
