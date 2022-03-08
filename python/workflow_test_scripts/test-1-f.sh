@@ -2,6 +2,10 @@
 ## Make sure that development and production don't look at the same commit at the time of running this script
 ## Outcome: created branch is deleted by create_branch.yml
 
+touch file.md
+git add .
+git commit -m 'Make file.md - test-1'
+git push origin production
 git checkout development
 git pull --all
 touch file.md
