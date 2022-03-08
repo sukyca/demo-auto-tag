@@ -22,9 +22,7 @@ jobs:
           echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
       - name: Permission setup
         run: |
-          git update-index --chmod=+x ./python/workflow_test_scripts/*.sh
-          git add .
-          git push origin production
+          chmod 775 ./python/workflow_test_scripts/*.sh
       - name: Test-1-false-scenario
         run: |
           cd python/workflow_test_scripts
