@@ -26,7 +26,7 @@ jobs:
           sh "./test-1-f.sh"
       - name: Test-1-success-scenario
         run: |
-          sleep 10
+          sleep 20
           cd python/workflow_test_scripts
           sh "./test-1-s.sh"
       - name: Test-2-false-scenario
