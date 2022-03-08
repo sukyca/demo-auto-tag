@@ -6,8 +6,10 @@ git checkout development
 git pull --all
 touch file.md
 git add .
+git log --oneline
 git commit -m 'Make file.md - test-1'
 git push origin development
+git log --oneline
 git checkout -b test-1
 git push origin test-1
 sleep 10
