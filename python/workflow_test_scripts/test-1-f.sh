@@ -29,6 +29,11 @@ fi
 git checkout production
 git branch -D test-1
 
+git checkout production
+git pull --all
+git reset --hard HEAD~1
+git push -f origin production
+
 git checkout development
 git pull --all
 git reset --hard HEAD~1
