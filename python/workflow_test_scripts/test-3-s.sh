@@ -73,6 +73,12 @@ gh run watch $RUN_ID --exit-status
 if [ $? = 0 ]
 then 
     echo "test-3: Delete workflow deleted branch - pr_closed workflow is working properly"
+    if [ -z $(git rev-parse --verify test-3 2> /dev/null) ] && [ -z $(git rev-parse --verify dev-test-3 2> /dev/null) ] && [ -z $(git rev-parse --verify prod-test-3 2> /dev/null) ];
+    then 
+        echo "pr_closed workflow successfully deleted branch and tags."
+    else
+        echo "pr_closed workflow failed to delete branch and tags."
+    fi
     echo "test-3: SUCCESS"
 else
     echo "test-3: Delete workflow recreated branch - pr_closed workflow is not working properly"
