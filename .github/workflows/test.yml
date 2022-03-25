@@ -1,0 +1,14 @@
+name: "Testing workflow"
+
+on:
+  workflow_dispatch:
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  sleep-minute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Sleep for a minute"
+        run: sleep 60
