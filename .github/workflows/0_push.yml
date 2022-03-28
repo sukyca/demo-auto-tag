@@ -1,21 +1,17 @@
 name: Push (Run CodeBuild)
 
 on:
-  workflow_dispatch:
-  
-permissions:
-  id-token: write
-  contents: write
+  push:
 
 jobs:
-  push-run-codebuild:
+  sleep-two-minutes:
     name: run-codebuild-on-push
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
-        token: ${{ secrets.SEMANTIC_RELEASE_ACTION_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         fetch-depth: 0
       
     - name: Dump GitHub context
@@ -24,24 +20,5 @@ jobs:
       run: |
         echo "$GITHUB_CONTEXT"
           
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-region: us-east-2
-        role-to-assume: "arn:aws:iam::722411629410:role/github_oidc"
-        role-duration-seconds: 1200
-        role-session-name: "MySessionName"
-        
-    - name: Run CodeBuild
-      uses: aws-actions/aws-codebuild-run-build@v1
-      with:
-        project-name: "CDPT-SNFLK-edp-terraform-snowflake-dev"
-        buildspec-override: ./buildspec.yml
-        
-    - name:  CodeBuild fail
-      if: ${{ failure() }}
-      run: |
-          echo "Reseting ${{ github.ref_name }} to previous commit."
-          git checkout ${{ github.ref_name }}
-          git reset --hard HEAD~1
-          git push -f origin ${{ github.ref_name }}
+    - name: Sleep 2 mins
+      run: sleep 2m
