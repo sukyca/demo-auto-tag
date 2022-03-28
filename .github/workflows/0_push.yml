@@ -1,7 +1,7 @@
 name: Push (Run CodeBuild)
 
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   sleep-two-minutes:
