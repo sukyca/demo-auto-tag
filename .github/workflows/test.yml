@@ -24,4 +24,4 @@ jobs:
         
       - name: Check for running Workflows
         run: |
-          gh run list --branch development --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select(.event=="push")'
+          gh run list --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select((.databaseId==${{ github.run_id }}) and (.status=="in_progress"))'
