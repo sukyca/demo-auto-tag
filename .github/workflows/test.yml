@@ -24,4 +24,7 @@ jobs:
         
       - name: Check for running Workflows
         run: |
-          gh run list --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select((.databaseId==${{ github.run_id }}) and (.status=="in_progress"))'
+          gh run list --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select((.name==${{ github.workflow }}) and (.status=="in_progress"))'
+      
+      - name: Sleep for 60 seconds
+        run: sleep 60
