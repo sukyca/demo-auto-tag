@@ -10,5 +10,15 @@ jobs:
   sleep-minute:
     runs-on: ubuntu-latest
     steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+        
+      - name: Check for running Workflows
+        run: |
+          gh run list --branch development --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select(.name=="Testing workflow")'
+        
       - name: "Sleep for a minute"
         run: sleep 60
