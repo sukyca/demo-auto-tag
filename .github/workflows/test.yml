@@ -10,7 +10,7 @@ env:
   SLEEP_INTERVAL: 10
 
 jobs:
-  sleep-minute:
+  check-existing-runs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -24,10 +24,8 @@ jobs:
         
       - name: Check for running Workflows
         run: |
-          BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's|refs/heads/||g')
-          
           while true; do
-            RUNNING_WORKFLOWS=$(gh run list --branch $BRANCH_NAME --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select((.name=="${{ github.workflow }}") and (.status=="in_progress") and (.databaseId!=${{ github.run_id }}))')
+            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.base_ref }} --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId --jq '.[] | select((.name=="${{ github.workflow }}") and (.status=="in_progress") and (.databaseId!=${{ github.run_id }}))')
             echo "$(date) Running workflows:"
             echo $RUNNING_WORKFLOWS
             if [ -z "$RUNNING_WORKFLOWS" ]; 
@@ -36,6 +34,9 @@ jobs:
             fi
             sleep ${{ env.SLEEP_INTERVAL }}
           done
-      
-      - name: Sleep for 60 seconds
-        run: sleep 60
+    
+  sleep-two-minutes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 120 seconds
+        run: sleep 120
