@@ -16,11 +16,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
         with:
-          token: $GH_TOKEN
+          token: ${{ env.GH_TOKEN }}
           fetch-depth: 0
       
       - name: Dump GitHub context
-        run: echo "$GITHUB_CONTEXT"
+        run: echo "${{ env.GITHUB_CONTEXT }}"
         
       - name: Check for running Workflows
         run: |
@@ -41,7 +41,7 @@ jobs:
             then
               break
             fi
-            sleep $SLEEP_INTERVAL
+            sleep ${{ env.SLEEP_INTERVAL }}
           done
       
       - name: Sleep for 60 seconds
