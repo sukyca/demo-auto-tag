@@ -1,9 +1,10 @@
 name: PR Open/Sync Validation
 
 on:
-  pull_request:
-    branches: [development, production]
-    types: [opened, synchronize]
+  workflow_dispatch:
+  #pull_request:
+  #  branches: [development, production]
+  #  types: [opened, synchronize]
 
 jobs:
   pr-opened-synchronize:
