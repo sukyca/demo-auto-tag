@@ -24,7 +24,7 @@ jobs:
         
       - name: Turnstyle
         id: turnstyle
-        uses: softprops/turnstyle@v1
+        uses: softprops/turnstyle@v0.1.5
         with:
           same-branch-only: true
           poll-interval-seconds: ${{ env.SLEEP_INTERVAL }}
