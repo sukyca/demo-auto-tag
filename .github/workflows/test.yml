@@ -26,6 +26,7 @@ jobs:
         id: turnstyle
         uses: softprops/turnstyle@v1
         with:
+          same-branch-only: true
           poll-interval-seconds: ${{ env.SLEEP_INTERVAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
