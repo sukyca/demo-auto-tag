@@ -23,14 +23,18 @@ jobs:
       - name: Dump GitHub context
         run: echo "${{ env.GITHUB_CONTEXT }}"
         
-      - name: Turnstyle
-        id: turnstyle
-        uses: softprops/turnstyle@v0.1.5
-        with:
-          same-branch-only: true
-          poll-interval-seconds: ${{ env.SLEEP_INTERVAL }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Wait for existing workflows to complete
+        run: |
+          while true; do
+            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.head_ref }} --json databaseId,name,status --jq '.[] | select((.name=="${{ github.workflow }}") and (.status=="in_progress") and (.databaseId<${{ github.run_id }}))')
+            echo "$(date) Running workflows:"
+            echo $RUNNING_WORKFLOWS
+            if [ -z "$RUNNING_WORKFLOWS" ]; 
+            then
+              break
+            fi
+            sleep ${{ env.SLEEP_INTERVAL }}
+          done
           
       - name: Close PR
         run: |
