@@ -27,13 +27,13 @@ jobs:
           BRANCH_NAME=$(echo "${{ github.ref }}" | sed -r 's|refs/heads/||g')
           
           while true; do
-            RUNNING_WORKFLOWS=$(gh run list 
-              --branch $BRANCH_NAME 
-              --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId 
-              --jq '.[] | select(
-                  (.name=="${{ github.workflow }}") 
-                  and (.status=="in_progress") 
-                  and (.databaseId!=${{ github.run_id }}))'
+            RUNNING_WORKFLOWS=$(gh run list \
+              --branch $BRANCH_NAME \
+              --json conclusion,createdAt,databaseId,event,headBranch,name,status,workflowDatabaseId \
+              --jq '.[] | select( \
+                  (.name=="${{ github.workflow }}")  \
+                  and (.status=="in_progress") \
+                  and (.databaseId!=${{ github.run_id }}))' \
             )
             echo "$(date) Running workflows:"
             echo $RUNNING_WORKFLOWS
