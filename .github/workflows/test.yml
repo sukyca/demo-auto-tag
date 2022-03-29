@@ -30,6 +30,12 @@ jobs:
           poll-interval-seconds: ${{ env.SLEEP_INTERVAL }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Close PR
+        run: |
+          gh pr merge ${{ github.event.number }} --squash
+          PR_CLOSE_RUN_ID=$(gh run list --branch ${{ github.event.pull_request.base.ref }} --json databaseId --jq '.[] | select((.status=="in_progress") and (.name=="PR Close Validation")) | .databaseId')
+          gh run watch $PR_CLOSE_RUN_ID --exit-status
     
   sleep-one-minute:
     runs-on: ubuntu-latest
