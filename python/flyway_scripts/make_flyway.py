@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import time
 import shutil
@@ -24,21 +25,25 @@ def get_script_items(db, schema, script_list):
     script_items = []
     for script_name in script_list:
         if script_name.startswith('V'):
-            script_type = 'versioned'
+            _script_type = 'versioned'
             _clean_script_name = utils.clean_script_name(script_name)
         elif script_name.startswith('backout'):
-            script_type = 'backout'
+            _script_type = 'backout'
             _clean_script_name = utils.clean_script_name(script_name)
         elif script_name.startswith('R'):
-            script_type = 'repeatable'
+            for script_type, pattern in validate.REPEATABLE_MIGRATIONS.items():
+                match = re.match(pattern, script_name)
+                if match is not None:
+                    _script_type = 'repeatable_{}'.format(script_type)
+                    break
             _clean_script_name = script_name
         else:
-            script_type = 'unknown'
+            _script_type = 'unknown'
             logger.warning('Encountered an invalid script type for file {}.{}.{}'.format(db, schema, script_name))
         
         item = {
             'script_name': script_name, # script_name = V{}__TABLE_NAME.sql
-            'script_type': script_type, # script_type = ('versioned', 'backout', 'repeatable')
+            'script_type': _script_type, # script_type = ('versioned', 'backout', 'repeatable')
             'clean_script_name': _clean_script_name # clean_script_name = TABLE_NAME.sql
         }
         script_items.append(item)
@@ -47,19 +52,15 @@ def get_script_items(db, schema, script_list):
 
 def get_repo_schema_scripts():
     repo_schema_scripts = {}
-    for db in os.listdir(config.REPO_DIR):
-        if db not in config.SKIP_SCHEMAS.keys():
-            config.SKIP_SCHEMAS[db] = []
-        
+    repo_dbs = os.listdir(config.REPO_DIR) 
+    for db in filter(lambda x: x not in config.SKIP_DATABASES, repo_dbs):
         repo_schema_scripts[db] = {}
-        filtered_schemas = filter(lambda x: x not in config.SKIP_SCHEMAS[db], os.listdir(os.path.join(config.REPO_DIR, db)))
-        for schema in filtered_schemas:
-            repo_scripts = filter(lambda x: x.endswith('.sql') or x.endswith('.py'), os.listdir(os.path.join(config.REPO_DIR, db, schema)))
+        repo_schemas = os.listdir(os.path.join(config.REPO_DIR, db))
+        for schema in filter(lambda x: x not in config.SKIP_SCHEMAS.get(db, []), repo_schemas):
+            schema_objs = os.listdir(os.path.join(config.REPO_DIR, db, schema))
+            repo_scripts = filter(lambda x: x.endswith('.sql') or x.endswith('.py'), schema_objs)
             repo_schema_scripts[db][schema] = get_script_items(db, schema, repo_scripts)
-        
-        if repo_schema_scripts[db] == {}:
-            repo_schema_scripts.pop(db)
-        
+    
     return repo_schema_scripts
 
 
@@ -94,7 +95,7 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
         scripts_to_backout[db] = {}
         for schema in repo_scripts[db].keys():
             v_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'versioned'}
-            r_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'repeatable'}
+            r_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'].startswith('repeatable')}
             b_repo_script_items = {x['clean_script_name']: x for x in repo_scripts[db][schema] if x['script_type'] == 'backout'}
             v_db_script_items = {x['clean_script_name']: x for x in db_scripts[db][schema] if x['script_type'] in ('versioned', 'repeatable')}
             
@@ -107,27 +108,30 @@ def get_scripts_to_deploy(repo_scripts, db_scripts):
             scripts_to_deploy[db][schema] = {}
             scripts_to_backout[db][schema] = {}
             
-            for script_name in deployed:
+            for clean_script_name in deployed:
                 scripts_to_deploy[db][schema].update({
-                    v_repo_script_items[script_name]['script_name']: v_db_script_items[script_name]['script_name']
+                    v_repo_script_items[clean_script_name]['script_name']: v_db_script_items[clean_script_name]['script_name']
                 })
             
-            for script_name in to_deploy:
+            for clean_script_name in to_deploy:
                 scripts_to_deploy[db][schema].update({
-                    v_repo_script_items[script_name]['script_name']: None
+                    v_repo_script_items[clean_script_name]['script_name']: None
                 })
                 
-                b_script_name = script_name.replace('.sql', '.py')
+                b_script_name = clean_script_name.replace('.sql', '.py')
                 scripts_to_backout[db][schema].update({
-                    v_repo_script_items[script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
+                    v_repo_script_items[clean_script_name]['script_name']: b_repo_script_items.get(b_script_name, {}).get('script_name')
                 })
 
-            for script_name in r_repo_script_items.keys():
+            for clean_script_name in r_repo_script_items.keys():
                 scripts_to_deploy[db][schema].update({
-                    r_repo_script_items[script_name]['script_name']: None
+                    r_repo_script_items[clean_script_name]['script_name']: None
                 })
     
-    logger.info("Scripts to deploy/backout:\n{}".format(json.dumps(scripts_to_backout, indent=2)))
+    logger.info("New deployment scripts:\n{}".format(json.dumps({
+        db: {schema: utils.sorted_scripts(scripts_to_backout[db][schema].keys())}
+        for db in scripts_to_backout.keys() for schema in scripts_to_backout[db].keys()
+    }, indent=4)))
     return scripts_to_deploy, scripts_to_backout
 
 
@@ -200,7 +204,7 @@ def generate_flyway_commands(scripts_to_deploy, command, rollback=False):
     if rollback:
         logger.info("Flyway migrate (rollback) commands successfully generated")
     else:
-        logger.info("Flyway migrate/validate commands successfully generated")
+        logger.info("Flyway {} commands successfully generated".format(command))
 
 
 def generate_flyway_rsa():
@@ -213,10 +217,14 @@ def make_flyway():
     setup_filesystems()
     # generate_flyway_rsa()
     repo_schema_scripts = get_repo_schema_scripts()
+    print("Repo schema scripts", json.dumps(repo_schema_scripts, indent=4))
     
-    validate.validate_repo_scripts()   
+    validate.validate_versioned_scripts()
+    validate.validate_repeatable_scripts()
     db_schema_scripts = get_db_schema_scripts(repo_schema_scripts)
     scripts_to_deploy, scripts_to_backout = get_scripts_to_deploy(repo_schema_scripts, db_schema_scripts)
+    print("scripts_to_deploy:", json.dumps(scripts_to_deploy, indent=4))
+    print("scripts_to_backout:", json.dumps(scripts_to_backout, indent=4))
     validate.validate_backout_scripts(scripts_to_deploy, scripts_to_backout)
     
     generate_flyway_filesystem(scripts_to_deploy)
