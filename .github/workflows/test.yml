@@ -40,6 +40,7 @@ jobs:
       - name: Close PR
         run: |
           gh pr merge ${{ github.event.number }} --squash
+          sleep 10
           PR_CLOSE_RUN_ID=$(gh run list --branch ${{ github.event.pull_request.head.ref }} --json databaseId,status,name --jq '.[] | select(((.status=="in_progress") or (.status=="queued")) and (.name=="PR Close Validation")) | .databaseId')
           gh run watch $PR_CLOSE_RUN_ID --exit-status
     
