@@ -27,7 +27,7 @@ jobs:
       - name: Wait for existing workflows to complete
         run: |
           while true; do
-            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.head_ref }} --json databaseId,name,status --jq '.[] | select((.name=="${{ github.workflow }}") and (.status=="in_progress") and (.databaseId<${{ github.run_id }}))')
+            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.head_ref }} --json databaseId,name,status --jq '.[] | select((.name=="${{ github.workflow }}") and (.status!="completed") and (.databaseId<${{ github.run_id }}))')
             echo "$(date) Running workflows:"
             echo $RUNNING_WORKFLOWS
             if [ -z "$RUNNING_WORKFLOWS" ]; 
