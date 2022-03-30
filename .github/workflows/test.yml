@@ -7,7 +7,6 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GITHUB_CONTEXT: ${{ toJSON(github) }}
   SLEEP_INTERVAL: 10
 
 jobs:
@@ -21,12 +20,14 @@ jobs:
           fetch-depth: 0
       
       - name: Dump GitHub context
-        run: echo "${{ env.GITHUB_CONTEXT }}"
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
         
       - name: Wait for existing workflows to complete
         run: |
           while true; do
-            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.head_ref }} --json databaseId,name,status --jq '.[] | select((.name=="${{ github.workflow }}") and (.status=="in_progress") and (.databaseId<${{ github.run_id }}))')
+            RUNNING_WORKFLOWS=$(gh run list --branch ${{ github.head_ref }} --json databaseId,name,status --jq '.[] | select((.name=="${{ github.workflow }}") and ((.status=="in_progress") or (.status=="queued")) and (.databaseId<${{ github.run_id }}))')
             echo "$(date) Running workflows:"
             echo $RUNNING_WORKFLOWS
             if [ -z "$RUNNING_WORKFLOWS" ]; 
@@ -39,7 +40,7 @@ jobs:
       - name: Close PR
         run: |
           gh pr merge ${{ github.event.number }} --squash
-          PR_CLOSE_RUN_ID=$(gh run list --branch ${{ github.event.pull_request.base.ref }} --json databaseId,status,name --jq '.[] | select((.status=="in_progress") and (.name=="PR Close Validation")) | .databaseId')
+          PR_CLOSE_RUN_ID=$(gh run list --branch ${{ github.event.pull_request.head.ref }} --json databaseId,status,name --jq '.[] | select(((.status=="in_progress") or (.status=="queued")) and (.name=="PR Close Validation")) | .databaseId')
           gh run watch $PR_CLOSE_RUN_ID --exit-status
     
   sleep-one-minute:
