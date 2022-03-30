@@ -7,7 +7,6 @@ on:
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  GITHUB_CONTEXT: ${{ toJSON(github) }}
   SLEEP_INTERVAL: 10
 
 jobs:
@@ -21,7 +20,9 @@ jobs:
           fetch-depth: 0
       
       - name: Dump GitHub context
-        run: echo "${{ env.GITHUB_CONTEXT }}"
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
         
       - name: Wait for existing workflows to complete
         run: |
