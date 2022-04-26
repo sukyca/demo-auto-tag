@@ -43,6 +43,16 @@ jobs:
   #        git push -f origin ${{ github.ref_name }}
   #
   #
+  
+  dump-context:
+    name: dump-context
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+  
   tag-merge:
     name: tag-merge
    # needs: pr-closed-run-codebuild
