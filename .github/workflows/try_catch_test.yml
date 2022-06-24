@@ -1,11 +1,14 @@
-name: Push (Run CodeBuild)
+name: Try catch
 
 on:
   workflow_dispatch:
 
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
-  sleep-two-minutes:
-    name: run-codebuild-on-push
+  try_catch:
+    name: try_catch
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -20,5 +23,10 @@ jobs:
       run: |
         echo "$GITHUB_CONTEXT"
           
-    - name: Sleep 2 mins
-      run: sleep 2m
+    - name: Run script
+      run: |
+        . "./.github/workflows/utils.sh"
+
+        RUNNING_WORKFLOW=$(check_command "gh run list --json databaseId --repo sukyca/snowflake-test-repo")
+
+        echo "$RUNNING_WORKFLOW"

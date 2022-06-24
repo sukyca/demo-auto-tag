@@ -45,12 +45,13 @@ jobs:
             echo "Feature branch HEAD is not = Tagged COMMIT_ID"
             exit 1
           fi
-          
-      - name: Run
-        run: |
+      
+      - run: |
           while [ true ];do
+            date
+            sleep 30
           done
-        
+  
 #  pr-opened-run-codebuild:
 #    name: pr-opened-run-codebuild
 #    runs-on: ubuntu-latest

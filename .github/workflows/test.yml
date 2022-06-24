@@ -1,9 +1,9 @@
 name: "Testing workflow"
 
 on:
-  #workflow_dispatch:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_dispatch:
+  # pull_request:
+  #   types: [opened, synchronize]
 
 env:
   GH_TOKEN: ${{ secrets.TOKEN }}
