@@ -1,0 +1,25 @@
+name: Tag on push to production
+on:
+  push:
+    branches: production
+
+jobs:
+  tag:
+    name: tag
+    runs-on: ubuntu-latest
+    steps:     
+      - name: Checkout Production
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+          ref: production
+
+      - name: tag step
+        uses: uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          tag-prefix: 'v'
+          release-count: '10'
+          version-file: './version.json'
+          
