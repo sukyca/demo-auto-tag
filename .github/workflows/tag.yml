@@ -1,4 +1,4 @@
-name: Tag on push to production
+name: Tag on push to production - test
 on:
   push:
     branches: production
