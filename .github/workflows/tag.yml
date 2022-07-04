@@ -16,7 +16,7 @@ jobs:
           ref: production
 
       - name: tag step
-        uses: uses: TriPSs/conventional-changelog-action@v3
+        uses: TriPSs/conventional-changelog-action@v3
         with:
           github-token: ${{ secrets.TOKEN }}
           tag-prefix: 'v'
