@@ -1,3 +1,15 @@
+## [1.1.1](https://github.com/sukyca/snowflake-test-repo/compare/v1.1.0...v1.1.1) (2022-07-05)
+
+
+### Bug Fixes
+
+* Patch the bug ([e4615a8](https://github.com/sukyca/snowflake-test-repo/commit/e4615a8625a070182ca6c4db67f08f2a22c4a851))
+* Patch the bug ([9988286](https://github.com/sukyca/snowflake-test-repo/commit/998828680d88a0d4d77ab6cdece330b2a094cbbe))
+* Patch the bug ([4ce0b94](https://github.com/sukyca/snowflake-test-repo/commit/4ce0b94540dac60bffab2c34588ac39d35893c68))
+* Patch the bug ([7c8a162](https://github.com/sukyca/snowflake-test-repo/commit/7c8a1629d7a960d0f6d4c9f605188f602ec442b7))
+
+
+
 # [1.1.0](https://github.com/sukyca/snowflake-test-repo/compare/v1.0.2...v1.1.0) (2022-07-05)
 
 
