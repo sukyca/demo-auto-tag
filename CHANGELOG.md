@@ -1,3 +1,12 @@
+## [1.8.1](https://github.com/sukyca/snowflake-test-repo/compare/v1.1.1...v1.8.1) (2022-07-06)
+
+
+### Bug Fixes
+
+* Feature/asuljic tag ([#354](https://github.com/sukyca/snowflake-test-repo/issues/354)) ([2b91694](https://github.com/sukyca/snowflake-test-repo/commit/2b91694ef67aa0ffa6c96b0cc62fece65b71dbc5))
+
+
+
 ## [1.1.1](https://github.com/sukyca/snowflake-test-repo/compare/v1.1.0...v1.1.1) (2022-07-05)
 
 
