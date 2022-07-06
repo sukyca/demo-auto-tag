@@ -1,3 +1,12 @@
+# [1.9.0](https://github.com/sukyca/snowflake-test-repo/compare/v1.8.1...v1.9.0) (2022-07-06)
+
+
+### Features
+
+* edit README3 ([#356](https://github.com/sukyca/snowflake-test-repo/issues/356)) ([f47fda1](https://github.com/sukyca/snowflake-test-repo/commit/f47fda1457942b47c6f90c9eabed37b03f751303))
+
+
+
 ## [1.8.1](https://github.com/sukyca/snowflake-test-repo/compare/v1.1.1...v1.8.1) (2022-07-06)
 
 
