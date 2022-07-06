@@ -1,3 +1,12 @@
+# [1.10.0](https://github.com/sukyca/snowflake-test-repo/compare/v1.9.0...v1.10.0) (2022-07-06)
+
+
+### Features
+
+* Feature/asuljic tag ([#357](https://github.com/sukyca/snowflake-test-repo/issues/357)) ([dfd1931](https://github.com/sukyca/snowflake-test-repo/commit/dfd1931c1a4a211fe7a0eb5ecdd63653759f9c6e))
+
+
+
 # [1.9.0](https://github.com/sukyca/snowflake-test-repo/compare/v1.8.1...v1.9.0) (2022-07-06)
 
 
