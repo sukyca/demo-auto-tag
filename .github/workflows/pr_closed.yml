@@ -164,3 +164,13 @@ jobs:
             echo 'Feature branch HEAD does not point to the correct commit. No tags or branches were deleted.'
             exit 0
           fi
+  
+  sleep-some-time:
+    name: sleep-some-time
+    needs: tags-delete
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Sleep
+        run: sleep 60
+    

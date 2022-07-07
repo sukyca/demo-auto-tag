@@ -1,7 +1,7 @@
-name: Tag on push to production - testing
+name: Tag on push to production - test
 on:
   push:
-    branches: production
+    branches: development
 
 jobs:
   tag:
@@ -16,10 +16,8 @@ jobs:
           ref: production
 
       - name: tag step
-        uses: TriPSs/conventional-changelog-action@v3
+        uses: rymndhng/release-on-push-action@master
         with:
-          github-token: ${{ secrets.TOKEN }}
-          tag-prefix: 'v'
-          release-count: '10'
-          version-file: './version.json'
+          bump_version_scheme: minor
+          tag_prefix: v
           
