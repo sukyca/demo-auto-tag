@@ -2,9 +2,12 @@ name: PR Close Validation
 
 on:
   workflow_dispatch:
-#   pull_request:
-#     branches: [development, production]
-#     types: [closed]
+  pull_request:
+    branches: [development, production]
+    types: [closed]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.TOKEN }}
 
 jobs:
   #pr-closed-run-codebuild:
@@ -62,7 +65,7 @@ jobs:
       - name: Checkout Feature
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ env.GITHUB_TOKEN }}
           fetch-depth: 0
       
       - name: Dump GitHub context
@@ -75,32 +78,39 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
 
-      - name: Tag merge
-        if: ${{ github.event.pull_request.merged == true }}
-        run: |
-          case ${{ github.base_ref }} in
-            development)
-              TAG="dev-${{ github.head_ref }}"
-              ;;
-            test)
-              TAG="tst-${{ github.head_ref }}"
-              ;;
-            production)
-              TAG="prod-${{ github.head_ref }}"
-              ;;
-            *)
-              TAG=''
-              ;;
-          esac
+      # - name: Tag merge
+      #   if: ${{ github.event.pull_request.merged == true }}
+      #   run: |
+      #     case ${{ github.base_ref }} in
+      #       development)
+      #         TAG="dev-${{ github.head_ref }}"
+      #         ;;
+      #       test)
+      #         TAG="tst-${{ github.head_ref }}"
+      #         ;;
+      #       production)
+      #         TAG="prod-${{ github.head_ref }}"
+      #         ;;
+      #       *)
+      #         TAG=''
+      #         ;;
+      #     esac
           
-          if [[ -z "$TAG" ]];
-          then 
-            echo 'Invalid branch name: got "${{ github.base_ref }}", expected one of ("development", "test", "production")'
-            exit 1
-          else
-            git tag -a "$TAG" -m "Add ${{ github.base_ref }} tag" ${{ github.event.pull_request.head.sha }}
-            git push origin "$TAG"
-          fi
+      #     if [[ -z "$TAG" ]];
+      #     then 
+      #       echo 'Invalid branch name: got "${{ github.base_ref }}", expected one of ("development", "test", "production")'
+      #       exit 1
+      #     else
+      #       git tag -a "$TAG" -m "Add ${{ github.base_ref }} tag" ${{ github.event.pull_request.head.sha }}
+      #       git push origin "$TAG"
+      #     fi
+
+      - name: tag step
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          tag-prefix: 'v'
+          version-file: ./version.json
       
   tags-delete:
     name: tags-delete
@@ -111,7 +121,7 @@ jobs:
       - name: Checkout Feature
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ env.GITHUB_TOKEN }}
           fetch-depth: 0
           ref: ${{ github.head_ref }}
           
@@ -139,7 +149,7 @@ jobs:
       - name: Checkout Production
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ env.GITHUB_TOKEN }}
           fetch-depth: 0
           ref: production
 
@@ -164,13 +174,4 @@ jobs:
             echo 'Feature branch HEAD does not point to the correct commit. No tags or branches were deleted.'
             exit 0
           fi
-  
-  sleep-some-time:
-    name: sleep-some-time
-    needs: tags-delete
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    steps:
-      - name: Sleep
-        run: sleep 60
     

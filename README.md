@@ -16,6 +16,6 @@ n xx x x xs
 n s
 n
 n xx xx 
-n
+n x
 n
 
