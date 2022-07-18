@@ -1,0 +1,43 @@
+name: PR Close Validation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: production
+    types: [closed]
+
+env:
+  GITHUB_TOKEN: ${{ secrets.TOKEN }}
+
+jobs:
+  dump-context:
+    name: dump-context
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+  
+  tag-merge:
+    name: tag-merge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Feature
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
+      - name: tag step
+        uses: TriPSs/conventional-changelog-action@v3
+        with:
+          github-token: ${{ secrets.TOKEN }}
+          tag-prefix: 'v'
+          version-file: ./version.json
+      
