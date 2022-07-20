@@ -15,7 +15,7 @@ def trigger_workflow(Workflow_Name,pl_Baseline_Number,pl_Baseline_Revision):
 
       headers = {
         "Accept": "application/vnd.github.v3+json",
-        "Authorization": "token {TOKEN}"
+        "Authorization": "access_token {TOKEN}"
       }
 
       data = {
