@@ -2,10 +2,10 @@ import os
 import requests
 import sys
 
-TOKEN= str(sys.argv[1])
-OWNER= str(sys.argv[2])
-REPO= str(sys.argv[3])
-Workflow_Name= str(sys.argv[4])
+TOKEN= str(sys.argv[0])
+OWNER= str(sys.argv[1])
+REPO= str(sys.argv[2])
+Workflow_Name= str(sys.argv[3])
 
 
 print( "the token value is")
