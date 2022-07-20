@@ -52,6 +52,6 @@ jobs:
       - name: Trigger the Workflow
         run: |
          cd "$GITHUB_WORKSPACE/python/"
-         python $GITHUB_WORKSPACE/python/workflow_trigger.py ${{ env.token }} ${{ github.event.inputs.workflow2_github_account}} ${{ github.event.inputs.workflow2_repo_github}} ${{ github.event.inputs.workflow2_name}} ${{ env.payload_Baseline_Number }} ${{ env.payload_Baseline_Revision }}
+         python $GITHUB_WORKSPACE/python/workflow_trigger.py ${{ secrets.S_TOKEN }} ${{ github.event.inputs.workflow2_github_account}} ${{ github.event.inputs.workflow2_repo_github}} ${{ github.event.inputs.workflow2_name}} ${{ env.payload_Baseline_Number }} ${{ env.payload_Baseline_Revision }}
     
     
