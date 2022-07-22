@@ -14,8 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     env: 
       token: ${{ secrets.S_TOKEN }}
-      payload_Baseline_Number: "BSL_001"
-      payload_Baseline_Revision: "zsfdgsdbgngffdwdx1dxvv2"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
