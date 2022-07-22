@@ -29,4 +29,4 @@ jobs:
       - name: Trigger the Workflow
         run: |
           curl \
-            -X POST -H "Accept: application/vnd.github+json" -H "Authorization: token <${{ secrets.S_TOKEN }}>" "https://api.github.com/repos/sukyca/demo-auto-tag/dispatches" -d "{\"event_type\":\"Workflow2\",\"client_payload\":{\"unit\":false,\"integration\":true}}" 
+            -X POST -H "Accept: application/vnd.github+json" -H "Authorization: token ${{ secrets.S_TOKEN }}" "https://api.github.com/repos/sukyca/demo-auto-tag/dispatches" -d "{\"event_type\":\"Workflow2\",\"client_payload\":{\"unit\":false,\"integration\":true}}" 
