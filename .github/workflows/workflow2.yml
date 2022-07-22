@@ -4,6 +4,7 @@ name: Workflow2
 on:
  repository_dispatch:
     types: [Workflow2]
+    branches: [production]
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
