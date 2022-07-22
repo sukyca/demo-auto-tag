@@ -5,21 +5,6 @@ name: Workflow1
 # Controls when the workflow will run
 on:
   workflow_dispatch:
-    inputs: 
-      workflow2_name:
-        description: 'Workflow2 Name for Triggering'
-        required: true
-        default: 'Workflow2'
-      
-      workflow2_github_account:
-        description: 'GitHub Account Owner'
-        required: true
-        default: 'sukyca'
-      
-      workflow2_repo_github:
-        description: 'GitHub Repository Name'
-        required: true
-        default: 'demo-auto-tag'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -34,24 +19,18 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
-
-      - name: setup python
-        uses: actions/setup-python@v2
+      - name: Checkout Production
+        uses: actions/checkout@v2
         with:
-         python-version: 3.8 #install the python needed
-         
-      - name: Install dependencies
-        run: |
-           cd "$GITHUB_WORKSPACE/python/"
-           python -m pip install --upgrade pip
-           pip install -r requirements.txt
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+          ref: production
           
       - name: Trigger the Workflow
         run: |
-         cd "$GITHUB_WORKSPACE/python/"
-         python $GITHUB_WORKSPACE/python/workflow_trigger.py ${{ secrets.S_TOKEN }} ${{ github.event.inputs.workflow2_github_account}} ${{ github.event.inputs.workflow2_repo_github}} ${{ github.event.inputs.workflow2_name}} ${{ env.payload_Baseline_Number }} ${{ env.payload_Baseline_Revision }}
-    
-    
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github+json" \ 
+          -H "Authorization: token <${{ secrets.S_TOKEN }}>" \
+          https://api.github.com/repos/sukyca/demo-auto-tag/dispatches \
+          -d '{"event_type":"Workflow2","client_payload":{"unit":false,"integration":true}}' 
