@@ -19,7 +19,7 @@ def trigger_workflow(Workflow_Name,pl_Baseline_Number,pl_Baseline_Revision):
       }
 
       data = {
-        "event_type": Workflow_Name,
+        "event_type": "Workflow2",
         "client_payload": {
           'baselinetag': pl_Baseline_Number,
           'revision_number': pl_Baseline_Revision
