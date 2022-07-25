@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: production
-          repository: Associated-Bank/demo-auto-tag
+          repository: sukyca/demo-auto-tag
           token: ${{ secrets.TOKEN }}
           fetch-depth: 0
 
