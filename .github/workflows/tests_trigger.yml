@@ -35,14 +35,12 @@ jobs:
           repository: sukyca/demo-auto-tag
           token: ${{ secrets.TOKEN }}
           fetch-depth: 0
-
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
-      - name: Setup git config
-        run: echo "Running tests on ${{ inputs.TESTING_FEATURE_BRANCH }} "
         
       - name: Print commit logs
         run: git log --oneline -n 10
+        
+      - name: Setup git config
+        run: |
+          git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
+          git log --oneline -n 10
+          
