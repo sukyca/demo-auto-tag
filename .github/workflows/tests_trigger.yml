@@ -53,12 +53,14 @@ jobs:
           git checkout --track origin/development
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
           git branch -u origin/development
-
-          git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
-          echo "cehckout"
+          
+          if -z [[ git rev-list origin/${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null ]]; then
+            git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
+          else
+            git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
+          fi
+          
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
-          echo "merge"
           git push -u origin ${{ inputs.TESTING_FEATURE_BRANCH }}
-          echo "push"
           git log --oneline -n 10
           
