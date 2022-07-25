@@ -1,0 +1,48 @@
+name: Tests Trigger Workflow
+
+on:
+  workflow_call:
+    secrets:
+      TOKEN:
+        required: true
+    
+    inputs:
+      TESTING_FEATURE_BRANCH:
+        required: false
+        type: string
+        default: feature/testing-branch
+  
+  workflow_dispatch:
+    inputs:
+      TESTING_FEATURE_BRANCH:
+        required: false
+        type: string
+        default: feature/testing-branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+        
+      - name: Checkout Production
+        uses: actions/checkout@v3
+        with:
+          ref: production
+          repository: Associated-Bank/demo-auto-tag
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Setup git config
+        run: echo "Running tests on ${{ inputs.TESTING_FEATURE_BRANCH }} "
+        
+      - name: Print commit logs
+        run: git log --oneline -n 10
