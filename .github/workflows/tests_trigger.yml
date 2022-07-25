@@ -54,7 +54,7 @@ jobs:
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
           git branch -u origin/development
           
-          if -z [[ git rev-list origin/${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null ]]; then
+          if -z [[ git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null ]]; then
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
           else
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
