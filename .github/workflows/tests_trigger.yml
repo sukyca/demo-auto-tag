@@ -51,8 +51,11 @@ jobs:
           git branch -u origin/production
           
           git checkout --track origin/development
+          echo "checkout"
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
+          echo "merge"
           git branch -u origin/development
+          echo "upstream"
 
           git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
