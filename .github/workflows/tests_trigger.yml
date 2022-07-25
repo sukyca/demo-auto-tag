@@ -55,8 +55,12 @@ jobs:
           git branch -u origin/development
 
           git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
+          echo "cehckout"
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
+          echo "merge"
           git push origin ${{ inputs.TESTING_FEATURE_BRANCH }}
+          echo "push"
           git branch -u origin/${{ inputs.TESTING_FEATURE_BRANCH }}
+          echo "upstream"
           git log --oneline -n 10
           
