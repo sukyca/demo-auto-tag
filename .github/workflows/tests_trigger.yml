@@ -47,14 +47,16 @@ jobs:
 
           git remote add upstream https://github.com/sukyca/snowflake-test-repo.git
           git fetch upstream
+          echo "::group::Merge upstream/production to origin/production"
           git merge upstream/production --allow-unrelated-histories --strategy-option theirs
+          echo "::endgroup::"
           git branch -u origin/production
           
           git checkout --track origin/development
+          echo "::group::Merge upstream/development to origin/development"
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
+          echo "::endgroup::"
           git branch -u origin/development
-          
-          echo "git rev-list command: $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null)"
           
           if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
             echo "creating branch"
@@ -64,7 +66,9 @@ jobs:
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
           fi
           
+          echo "::group::Merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} to origin/${{ inputs.TESTING_FEATURE_BRANCH }}"
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
+          echo "::endgroup::"
           git push -u origin ${{ inputs.TESTING_FEATURE_BRANCH }}
           git log --oneline -n 10
           
