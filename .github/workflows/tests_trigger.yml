@@ -50,8 +50,7 @@ jobs:
           git merge upstream/production --allow-unrelated-histories --strategy-option theirs
           git branch -u origin/production
           
-          git remote -v
-          git checkout origin/development
+          git checkout development
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
           git branch -u origin/development
 
