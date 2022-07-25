@@ -66,7 +66,8 @@ jobs:
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
           fi
           
-          sleep 15
+          git pull origin production
+          
           echo "::group::Merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} to origin/${{ inputs.TESTING_FEATURE_BRANCH }}"
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
           echo "::endgroup::"
