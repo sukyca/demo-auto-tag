@@ -36,9 +36,6 @@ jobs:
           token: ${{ secrets.TOKEN }}
           fetch-depth: 0
         
-      - name: Print commit logs
-        run: git log --oneline -n 10
-        
       - name: Setup git config
         run: |
           git config user.name "GitHub Actions Bot"
@@ -61,7 +58,6 @@ jobs:
           if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
             echo "creating branch"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
-            echo "git log of feature branch: $(git log --oneline -5 ${{ inputs.TESTING_FEATURE_BRANCH }})"
           else
             echo "checkout branch"
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
@@ -71,5 +67,3 @@ jobs:
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
           echo "::endgroup::"
           git push -u origin ${{ inputs.TESTING_FEATURE_BRANCH }}
-          git log --oneline -n 10
-          
