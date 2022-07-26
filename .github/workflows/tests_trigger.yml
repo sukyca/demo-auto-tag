@@ -55,16 +55,12 @@ jobs:
           echo "::endgroup::"
           git branch -u origin/development
           
-          echo "git branches local: $(git branch)"
-          echo "git rev-parse: $(git rev-parse --verify ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null)"
-          echo "git ls-remote: $(git ls-remote origin ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null)"
-          
           if [[ -z $(git ls-remote origin ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null) ]]; 
           then
-            echo "creating branch"
+            echo "Create branch: ${{ inputs.TESTING_FEATURE_BRANCH }}"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
           else
-            echo "checkout branch"
+            echo "Checkout branch: ${{ inputs.TESTING_FEATURE_BRANCH }}"
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
           fi
           
