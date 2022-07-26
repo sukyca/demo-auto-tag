@@ -55,7 +55,10 @@ jobs:
           echo "::endgroup::"
           git branch -u origin/development
           
-          if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; 
+          echo "git branches local: $(git branch)"
+          echo "git rev-parse: $(git rev-parse --verify ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null)"
+          
+          if [[ $(git rev-parse --verify ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null) ]]; 
           then
             echo "creating branch"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
