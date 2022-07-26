@@ -61,13 +61,11 @@ jobs:
           if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
             echo "creating branch"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
-            sleep 15
+            echo "git log of feature branch: $(git log --oneline -5 ${{ inputs.TESTING_FEATURE_BRANCH }})"
           else
             echo "checkout branch"
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
           fi
-          
-          git pull origin production
           
           echo "::group::Merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} to origin/${{ inputs.TESTING_FEATURE_BRANCH }}"
           git merge upstream/${{ inputs.TESTING_FEATURE_BRANCH }} --allow-unrelated-histories --strategy-option theirs
