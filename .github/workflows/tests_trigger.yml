@@ -55,7 +55,7 @@ jobs:
           echo "::endgroup::"
           git branch -u origin/development
           
-          if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
+          if -z [[ $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
             echo "creating branch"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
           else
