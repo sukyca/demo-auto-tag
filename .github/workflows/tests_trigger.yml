@@ -60,9 +60,8 @@ jobs:
           
           if [[ -z $(git rev-list ${{ inputs.TESTING_FEATURE_BRANCH }} -n 1 2> /dev/null) ]]; then
             echo "creating branch"
-            git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }}
+            git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
             echo "git log of feature branch: $(git log --oneline -5 ${{ inputs.TESTING_FEATURE_BRANCH }})"
-            sleep 180
           else
             echo "checkout branch"
             git checkout --track origin/${{ inputs.TESTING_FEATURE_BRANCH }}
