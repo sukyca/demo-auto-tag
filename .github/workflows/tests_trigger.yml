@@ -57,8 +57,9 @@ jobs:
           
           echo "git branches local: $(git branch)"
           echo "git rev-parse: $(git rev-parse --verify ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null)"
+          echo "git ls-remote: $(git ls-remote ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null)"
           
-          if [[ -z $(git rev-parse --verify ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null) ]]; 
+          if [[ -z $(git ls-remote ${{ inputs.TESTING_FEATURE_BRANCH }} 2> /dev/null) ]]; 
           then
             echo "creating branch"
             git checkout -b ${{ inputs.TESTING_FEATURE_BRANCH }} origin/production
