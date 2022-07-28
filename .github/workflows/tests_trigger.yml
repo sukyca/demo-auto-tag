@@ -1,4 +1,4 @@
-name: Tests Trigger Workflow
+name: Tests Trigger Workflow!
 
 on:
   workflow_call:
