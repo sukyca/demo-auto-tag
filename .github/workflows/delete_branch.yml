@@ -1,0 +1,60 @@
+name: Delete Branch Validation
+
+on:
+  delete:
+
+jobs:
+  delete-branch:
+    name: delete-branch
+    runs-on: ubuntu-latest
+    if: github.event.ref_type == 'branch'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+      
+      - name: Setup environment variables
+        run: |
+          echo "DEV_TAG=dev-${{ github.event.ref }}" >> $GITHUB_ENV
+          echo "TST_TAG=tst-${{ github.event.ref }}" >> $GITHUB_ENV
+          echo "PROD_TAG=prod-${{ github.event.ref }}" >> $GITHUB_ENV
+      
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      
+      - name: Validate Feature branch is merged into Production branch
+        id: production_merge
+        if: ${{ github.ref_type == 'branch' }}
+        shell: bash
+        run: |
+          if [[ -z $(git rev-list ${{ env.PROD_TAG }} -n 1 2> /dev/null) ]];
+          then echo "set-output name=merged::false"
+          else echo "set-output name=merged::true"
+          fi
+      
+      - name: Delete Feature branch
+        if: ${{ !steps.production_merge.outputs.merged }}
+        run: |
+          LATEST_LOWER_ENV_TAG=""
+          ALL_LOWER_ENV_TAGS="$DEV_TAG $TST_TAG"
+
+          for tag in $ALL_LOWER_ENV_TAGS;
+          do
+            if [[ -z $(git rev-list $tag -n 1 2> /dev/null) ]];
+            then echo "$tag does not exist"
+            else LATEST_LOWER_ENV_TAG=$tag
+            fi
+          done
+
+          if [[ -z $LATEST_LOWER_ENV_TAG ]];
+            then echo "No tags exist. Feature branch can be safely deleted"
+          else
+            echo "Latest tag: $LATEST_LOWER_ENV_TAG. Delete reverted"
+            git checkout -b ${{ github.event.ref }} $LATEST_LOWER_ENV_TAG
+            git push origin ${{ github.event.ref }}
+            exit 1
+          fi

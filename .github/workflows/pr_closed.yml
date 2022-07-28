@@ -3,13 +3,51 @@ name: PR Close Validation
 on:
   workflow_dispatch:
   pull_request:
-    branches: production
+    branches: [development, production]
     types: [closed]
 
 env:
   GITHUB_TOKEN: ${{ secrets.TOKEN }}
 
 jobs:
+  #pr-closed-run-codebuild:
+  #  name: pr-closed-run-codebuild
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #  - name: Checkout Feature
+  #    uses: actions/checkout@v2
+  #    with:
+  #      token: ${{ secrets.TOKEN }}
+  #      fetch-depth: 0
+  #
+  #  - name: Configure AWS Credentials
+  #    uses: aws-actions/configure-aws-credentials@v1
+  #    with:
+  #      aws-region: us-east-1
+  #      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #      
+  #  - name: Run CodeBuild
+  #    uses: aws-actions/aws-codebuild-run-build@v1
+  #    with:
+  #      project-name: CodeBuildProject-0HmCLmrCTbsZ
+  #      buildspec-override: ./buildspec.yml
+  #      env-vars-for-codebuild: |
+  #        ENVIRONMENT,
+  #        GITHUB_EVENT_ACTION_NAME
+  #    env:
+  #      GITHUB_EVENT_ACTION_NAME: ${{ github.event.action }}
+  #      ENVIRONMENT: ${{ github.base_ref }}
+  #      
+  #  - name: CodeBuild fail
+  #    if: ${{ failure() }}
+  #    run: |
+  #        echo "Reseting ${{ github.ref_name }} to previous commit."
+  #        git reset --hard HEAD~1
+  #        git push -f origin ${{ github.ref_name }}
+  #
+  #
+  
   dump-context:
     name: dump-context
     runs-on: ubuntu-latest
@@ -21,6 +59,7 @@ jobs:
   
   tag-merge:
     name: tag-merge
+   # needs: pr-closed-run-codebuild
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Feature
@@ -28,11 +67,43 @@ jobs:
         with:
           token: ${{ env.GITHUB_TOKEN }}
           fetch-depth: 0
-
+      
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      
       - name: Setup git config
         run: |
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
+
+      # - name: Tag merge
+      #   if: ${{ github.event.pull_request.merged == true }}
+      #   run: |
+      #     case ${{ github.base_ref }} in
+      #       development)
+      #         TAG="dev-${{ github.head_ref }}"
+      #         ;;
+      #       test)
+      #         TAG="tst-${{ github.head_ref }}"
+      #         ;;
+      #       production)
+      #         TAG="prod-${{ github.head_ref }}"
+      #         ;;
+      #       *)
+      #         TAG=''
+      #         ;;
+      #     esac
+          
+      #     if [[ -z "$TAG" ]];
+      #     then 
+      #       echo 'Invalid branch name: got "${{ github.base_ref }}", expected one of ("development", "test", "production")'
+      #       exit 1
+      #     else
+      #       git tag -a "$TAG" -m "Add ${{ github.base_ref }} tag" ${{ github.event.pull_request.head.sha }}
+      #       git push origin "$TAG"
+      #     fi
 
       - name: tag step
         uses: TriPSs/conventional-changelog-action@v3
@@ -41,3 +112,66 @@ jobs:
           tag-prefix: 'v'
           version-file: ./version.json
       
+  tags-delete:
+    name: tags-delete
+    needs: tag-merge
+    runs-on: ubuntu-latest
+    if: ${{ github.base_ref == 'production' }}
+    steps:
+      - name: Checkout Feature
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+          
+      - name: Find tags
+        run: |
+          DEV_TAG="dev-${{ github.head_ref }}"
+          PROD_TAG="prod-${{ github.head_ref }}"
+          
+          FEATURE_BRANCH_TAGS="$DEV_TAG $PROD_TAG"
+          ALL_TAGS_FOUND=true
+          NO_TAGS_FOUND=true
+          
+          for tag in $FEATURE_BRANCH_TAGS;
+          do
+            if [[ -z $(git branch ${{ github.head_ref }} --contains $tag 2> /dev/null) ]];
+            then ALL_TAGS_FOUND=false
+            else NO_TAGS_FOUND=false
+            fi
+          done
+
+          echo "ALL_TAGS_FOUND=$ALL_TAGS_FOUND" >> $GITHUB_ENV
+          echo "NO_TAGS_FOUND=$NO_TAGS_FOUND" >> $GITHUB_ENV
+          echo "FEATURE_BRANCH_TAGS=$FEATURE_BRANCH_TAGS" >> $GITHUB_ENV
+
+      - name: Checkout Production
+        uses: actions/checkout@v2
+        with:
+          token: ${{ env.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: production
+
+      - name: Delete tags
+        run: |
+          if [[ ${{ env.ALL_TAGS_FOUND }} == true && ${{ env.NO_TAGS_FOUND }} == false && ${{ github.event.pull_request.merged }} == true ]];
+          then
+            echo 'Feature branch contains both dev and prod tags; Delete ${{ github.head_ref }} branch'
+            for tag in ${{ env.FEATURE_BRANCH_TAGS }};
+            do
+              git tag -d $tag
+              git push origin --delete $tag
+            done
+            
+            git push origin --delete ${{ github.head_ref }}
+          elif [[ ${{ env.ALL_TAGS_FOUND }} == false && ${{ env.NO_TAGS_FOUND }} == true && ${{ github.event.pull_request.merged }} == true ]];
+          then
+            echo 'Feature branch does not contain dev or prod tags; Delete ${{ github.head_ref }} branch'
+
+            git push origin --delete ${{ github.head_ref }}
+          else
+            echo 'Feature branch HEAD does not point to the correct commit. No tags or branches were deleted.'
+            exit 0
+          fi
+    

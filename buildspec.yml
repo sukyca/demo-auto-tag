@@ -1,0 +1,46 @@
+version: 0.2
+env:
+  secrets-manager:
+    USER: "development/ab-demo/snowflake-credentials:user"
+    ACCOUNT: "development/ab-demo/snowflake-credentials:account"
+    PASSPHRASE: "development/ab-demo/snowflake-credentials:passphrase"
+    PASSWORD: "development/ab-demo/snowflake-credentials:password"
+    PRIVATE_KEY: "development/ab-demo/snowflake-credentials-private-key"
+
+phases:
+  pre_build:
+    commands:
+      - export DEPLOYMENT_DTTM_UTC=$(date -u +%Y%m%d%H%M%S)
+      - export DEPLOYMENT_DT_UTC=$(date -u +%Y%m%d)
+      - echo Build started on $(date -u)
+      - virtualenv venv 1> /dev/null
+      - . venv/bin/activate 1> /dev/null
+      - pip install --upgrade pip 1> /dev/null
+      - pip install ./python/lib/backout_functions_iolap-0.0.1-py3-none-any.whl 1> /dev/null
+      - wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/8.4.1/flyway-commandline-8.4.1-linux-x64.tar.gz | tar xvz 1> /dev/null && ln -s `pwd`/flyway-8.4.1/flyway /usr/local/bin 
+      - wget -q https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.33/slf4j-simple-1.7.33.jar -P ./flyway-8.4.1/lib/
+  build:
+    commands:
+      - python ./python/flyway_scripts/make_flyway.py
+      - |
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && ([ "$GITHUB_EVENT_ACTION_NAME" = "opened" ] || [ "$GITHUB_EVENT_ACTION_NAME" = "synchronize" ]);
+        then
+          echo Starting up flyway validate...
+          python ./python/flyway_scripts/run_flyway.py --validate
+        fi
+      
+  post_build:
+    commands:
+      - echo Entering post-build phase...
+      - |
+        if [ "$GITHUB_EVENT_NAME" = "pull_request" ] && [ "$GITHUB_EVENT_ACTION_NAME" = "closed" ];
+        then
+          echo Starting up flyway migrate...
+          python ./python/flyway_scripts/run_flyway.py --migrate
+          if [ $? = 1 ]
+          then exit 1
+          fi
+          zip -r artifacts.zip EDP_SNOWFLAKE/ python/ temp/deployment/ temp/rollback/ buildspec.yml 1> /dev/null
+          aws s3 cp artifacts.zip s3://"$ARTIFACT_BUCKET"/"$DEPLOYMENT_DT_UTC"/"$DEPLOYMENT_DTTM_UTC"_"$GITHUB_SHA".zip
+        fi
+      - echo Build finished on $(date -u)
