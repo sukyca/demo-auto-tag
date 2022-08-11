@@ -33,7 +33,7 @@ jobs:
         with:
           ref: production
           repository: sukyca/demo-auto-tag
-          token: ${{ secrets.S_TOKEN }}
+          token: ${{ secrets.TOKEN }}
           fetch-depth: 0
         
       - name: Setup git config
