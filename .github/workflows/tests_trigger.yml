@@ -41,6 +41,10 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git fetch origin
+          
+          echo "REMOTES!!!!!!"
+          git remote -v
+          echo "REMOTES!!!!!!"
 
           git remote add upstream https://github.com/sukyca/snowflake-test-repo.git
           git fetch upstream
