@@ -45,6 +45,12 @@ jobs:
           echo "REMOTES!!!!!!"
           git remote -v
           echo "REMOTES!!!!!!"
+          
+          echo "First ls"
+          ls
+          git checkout origin/production version.json
+          echo "Second ls"
+          ls
 
           git remote add upstream https://github.com/sukyca/snowflake-test-repo.git
           git fetch upstream
