@@ -1,0 +1,56 @@
+name: Tests Trigger Workflow!
+
+on:
+  workflow_call:
+    secrets:
+      TOKEN:
+        required: true
+    
+    inputs:
+      TESTING_FEATURE_BRANCH:
+        required: false
+        type: string
+        default: feature/testing-branch
+  
+  workflow_dispatch:
+    inputs:
+      TESTING_FEATURE_BRANCH:
+        required: false
+        type: string
+        default: feature/testing-branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+        
+      - name: Checkout Production
+        uses: actions/checkout@v3
+        with:
+          ref: production
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+        
+      - name: Setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git fetch origin
+          
+          echo "REMOTES!!!!!!"
+          git remote -v
+          echo "REMOTES!!!!!!"
+          
+          # echo "First ls"
+          # ls
+          # git checkout origin/production version.json
+          # echo "Second ls"
+          # ls
+          
+          echo "Create branch"
+          git checkout -b feature/branching
+          git push origin feature/branching
