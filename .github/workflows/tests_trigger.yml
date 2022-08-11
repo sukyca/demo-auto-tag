@@ -51,6 +51,10 @@ jobs:
           git checkout origin/production version.json
           echo "Second ls"
           ls
+          
+          echo "Create branch"
+          git checkout -b feature/branching
+          git push origin feature/branching
 
           git remote add upstream https://github.com/sukyca/snowflake-test-repo.git
           git fetch upstream
