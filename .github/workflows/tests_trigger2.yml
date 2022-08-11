@@ -53,3 +53,8 @@ jobs:
           git checkout upstream/production version.json
           echo "Second ls"
           ls
+          
+      - name: Next step
+        run: |
+          git remote -v
+          ls
