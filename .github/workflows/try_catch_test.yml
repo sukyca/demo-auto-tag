@@ -1,0 +1,32 @@
+name: Try catch
+
+on:
+  workflow_dispatch:
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  try_catch:
+    name: try_catch
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+      
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
+          
+    - name: Run script
+      run: |
+        . "./.github/workflows/utils.sh"
+
+        RUNNING_WORKFLOW=$(check_command "gh run list --json databaseId --repo sukyca/snowflake-test-repo")
+
+        echo "$RUNNING_WORKFLOW"

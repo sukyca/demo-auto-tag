@@ -1,0 +1,50 @@
+name: Test workflows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-tests:
+    name: run-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Production
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+          ref: production
+      - name: Setup git config
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+
+          echo "GH_TOKEN=${{ secrets.TOKEN }}" >> $GITHUB_ENV
+      - name: Test-1-false-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-1-f.sh"
+      - name: Test-1-success-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-1-s.sh"
+      - name: Test-2-false-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-2-f.sh"
+      - name: Test-2-success-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-2-s.sh"
+      - name: Test-3-success-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-3-s.sh"
+      - name: Test-4-false-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-4-f.sh"
+      - name: Test-4-success-scenario
+        run: |
+          cd python/workflow_test_scripts
+          sh "./test-4-s.sh"

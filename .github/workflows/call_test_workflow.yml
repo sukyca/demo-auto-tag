@@ -1,0 +1,18 @@
+name: Call Test Workflow 
+
+on:
+  workflow_dispatch:
+    inputs:
+      TESTING_FEATURE_BRANCH:
+        required: false
+        type: string
+        default: feature/testing-branch
+
+jobs:
+  call-test-workflow:
+    name: call-test-workflow
+    uses: sukyca/demo-auto-tag/.github/workflows/tests_trigger.yml@production
+    with:
+      TESTING_FEATURE_BRANCH: ${{ github.event.inputs.TESTING_FEATURE_BRANCH }}
+    secrets: 
+      TOKEN: ${{ secrets.TOKEN }}

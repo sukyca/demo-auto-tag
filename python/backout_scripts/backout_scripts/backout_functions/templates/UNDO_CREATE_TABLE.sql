@@ -1,0 +1,1 @@
+DROP TABLE {database}.{schema}.{table_name};

@@ -1,0 +1,12 @@
+name: Create Branch Validation
+
+on:
+  pull_request_review:
+
+jobs:
+  pr_review:
+    name: create-branch
+    runs-on: ubuntu-latest
+    steps:     
+      - name: Hello
+        run: echo "Hello"
