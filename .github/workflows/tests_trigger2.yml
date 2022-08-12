@@ -52,6 +52,7 @@ jobs:
           ls
           git checkout upstream/production .github/utils.sh
           echo "Second ls"
+          cd .github
           ls
           
       - name: Next step
