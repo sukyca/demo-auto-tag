@@ -50,7 +50,7 @@ jobs:
           git remote -v
           echo "First ls"
           ls
-          git checkout upstream/production version.json
+          git checkout upstream/production .github/utils.sh
           echo "Second ls"
           ls
           
