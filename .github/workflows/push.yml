@@ -1,0 +1,21 @@
+name: Remote
+
+on:
+ push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        
+      - name: Checkout Production
+        uses: actions/checkout@v3
+        with:
+          ref: feature/testr2
+          token: ${{ secrets.TOKEN }}
+          fetch-depth: 0
+
+      - name: Run a one-line script
+        run: |
+          git merge origin/development --squash --strategy-option theirs
