@@ -63,8 +63,7 @@ jobs:
           echo "::endgroup::"
           git branch -u origin/production
           
-          git checkout --track origin/development
-          echo "::group::Merge upstream/development to origin/development"
+          git checkout development
           git merge upstream/development --allow-unrelated-histories --strategy-option theirs
           echo "::endgroup::"
           git branch -u origin/development
